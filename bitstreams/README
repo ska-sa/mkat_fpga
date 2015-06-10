@@ -1,1 +1,9 @@
 signal processing bitstreams for MeerKAT
+
+The directory structure should mirror the ../source directory structure.
+
+bitstreams should be committed without the timestamp to reduce the number of files in the repo.
+
+tags should be used to note releases. 
+
+Temporary experimental files (including timestamp) are welcomed providing they are removed later.
