@@ -2,29 +2,36 @@ import os
 import logging
 import subprocess
 
+# Config using nose-testconfig plugin, set variables with --tc on nose command line
+from testconfig import config as test_config
+
 from corr2 import fxcorrelator
 from corr2 import utils
 
 LOGGER = logging.getLogger(__name__)
 
-config_filename = os.environ['CORR2INI']
 
 class CorrelatorFixture(object):
 
-    def __init__(self, config_filename):
+    def __init__(self, config_filename=None):
+        if config_filename is None:
+            config_filename = os.environ['CORR2INI']
         self.config_filename = config_filename
         os.environ['CORR2INI'] = config_filename
         self._correlator = None
+        """Assume correlator is already running if this flag is True.
+        IOW, don't do start_correlator() if set."""
 
     @property
     def correlator(self):
         if self._correlator is not None:
             return self._correlator
         else:
-            # Is it not easier to just call a self._correlator method?
-            self.start_correlator()
+            if int(test_config.get('start_correlator', False)):
+                # Is it not easier to just call a self._correlator method?
+                self.start_correlator()
             self._correlator = fxcorrelator.FxCorrelator(
-                'AR1 correlator', config_source=self.config_filename)
+                'test correlator', config_source=self.config_filename)
             self.correlator.initialise(program=False)
             return self._correlator
 
@@ -60,4 +67,4 @@ class CorrelatorFixture(object):
     def issue_metadata(self):
         subprocess.check_call('corr2_issue_spead_metadata.py')
 
-correlator_fixture = CorrelatorFixture(config_filename)
+correlator_fixture = CorrelatorFixture()
