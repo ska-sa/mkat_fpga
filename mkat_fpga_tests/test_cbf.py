@@ -13,13 +13,14 @@ from corr2.dsimhost_fpga import FpgaDsimHost
 from corr2.corr_rx import CorrRx
 
 from mkat_fpga_tests import correlator_fixture
+from mkat_fpga_tests.utils import normalised_magnitude, loggerise, complexise
 
 LOGGER = logging.getLogger(__name__)
 
 def get_vacc_offset(xeng_raw):
     """Assuming a tone was only put into input 0, figure out if VACC is roated by 1"""
-    b0 = np.abs(complexize(xeng_raw[:,0]))
-    b1 = np.abs(complexize(xeng_raw[:,1]))
+    b0 = np.abs(complexise(xeng_raw[:,0]))
+    b1 = np.abs(complexise(xeng_raw[:,1]))
     if np.max(b0) > 0 and np.max(b1) == 0:
         # We expect autocorr in baseline 0 to be nonzero if the vacc is properly aligned,
         # hence no offset
@@ -28,10 +29,6 @@ def get_vacc_offset(xeng_raw):
         return 1
     else:
         raise ValueError('Could not determine VACC offset')
-
-def complexize(input_data):
-    """Convert input data shape (X,2) to complex shape (X)"""
-    return input_data[:,0] + input_data[:,1]*1j
 
 class test_CBF(unittest.TestCase):
     def setUp(self):
@@ -81,25 +78,11 @@ class test_CBF(unittest.TestCase):
         self.addCleanup(self.corr_fix.stop_x_data)
         self.corr_fix.start_x_data()
 
-        full_range = 2**31      # Max range of the integers coming out of VACC
-        def get_mag(dump, baseline):
-            xrd = dump['xeng_raw']
-            b = complexize(xrd[:,baseline,:])
-            b_mag = np.abs(b)/full_range
-            return b_mag
-
-        def loggerize(data, dynamic_range=70):
-            log_data = 10*np.log10(data)
-            max_log = np.max(log_data)
-            min_log_clip = max_log - dynamic_range
-            log_data[log_data < min_log_clip] = min_log_clip
-            return log_data
-
         # Get baseline 0 data, i.e. auto-corr of m000h
         test_baseline = 0
         dump_timeout = 10
-        test_dump = self.receiver.get_clean_dump(dump_timeout)
-        b_mag = get_mag(test_dump, baseline=test_baseline)
+        test_data = self.receiver.get_clean_dump(dump_timeout)['xeng_raw']
+        b_mag = normalised_magnitude(test_data[:, test_baseline, :])
         # find channel with max power
         max_chan = np.argmax(b_mag)
         self.assertEqual(max_chan, test_chan,
@@ -127,8 +110,9 @@ class test_CBF(unittest.TestCase):
             else:
                 self.dhost.sine_sources.sin_0.set(frequency=freq, scale=0.125)
                 this_source_freq = self.dhost.sine_sources.sin_0.frequency
-                this_freq_dump = self.receiver.get_clean_dump(dump_timeout)
-                this_freq_response = get_mag(this_freq_dump, baseline=test_baseline)
+                this_freq_data = self.receiver.get_clean_dump(dump_timeout)['xeng_raw']
+                this_freq_response = normalised_magnitude(
+                    this_freq_data[:, test_baseline, :])
             signal_chan_test_freqs[i] = this_source_freq
             chan_responses[i] = this_freq_response
         self.corr_fix.stop_x_data()
@@ -145,7 +129,7 @@ class test_CBF(unittest.TestCase):
         chan_ripple = max_chan_response - min_chan_response
         acceptable_ripple_lt = 0.3
         self.assertLess(chan_ripple, acceptable_ripple_lt,
-                        'ripple {} dB within 80% of channel fc >= {} dB'
+                        'ripple {} dB within 80% of channel fc is >= {} dB'
                         .format(chan_ripple, acceptable_ripple_lt))
 
         # from matplotlib import pyplot
@@ -154,7 +138,7 @@ class test_CBF(unittest.TestCase):
         # linestyles = itertools.cycle(itertools.product(style_cycle, colour_cycle))
         # for i, freq in enumerate(desired_chan_test_freqs):
         #     style, colour = linestyles.next()
-        #     pyplot.plot(loggerize(chan_responses[i], dynamic_range=60), color=colour, ls=style)
+        #     pyplot.plot(loggerise(chan_responses[i], dynamic_range=60), color=colour, ls=style)
         # pyplot.ion()
         # pyplot.show()
         # import IPython ; IPython.embed()
