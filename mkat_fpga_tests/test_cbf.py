@@ -56,6 +56,7 @@ class test_CBF(unittest.TestCase):
     # tests will be b0rked.
 
     def test_channelisation(self):
+        """TP.C.1.19 CBF Channelisation Wideband Coarse L-band"""
         cconfig = self.correlator.configd
         n_chans = int(cconfig['fengine']['n_chans'])
         BW = float(cconfig['fengine']['bandwidth'])
@@ -145,7 +146,7 @@ class test_CBF(unittest.TestCase):
         test_dump = self.receiver.get_clean_dump(DUMP_TIMEOUT)
 
         # Get list of all the correlator input labels
-        bl_input_labels = sorted(tuple(test_dump['input_labelling'][:,0]))
+        input_labels = sorted(tuple(test_dump['input_labelling'][:,0]))
         # Get list of all the baselines present in the correlator output
         present_baselines = sorted(
             set(tuple(bl) for bl in test_dump['bls_ordering']))
@@ -153,9 +154,9 @@ class test_CBF(unittest.TestCase):
         # Make a list of all possible baselines (including redundant baselines) for the
         # given list of inputs
         possible_baselines = set()
-        for bi in bl_input_labels:
-            for bj in bl_input_labels:
-                possible_baselines.add((bi, bj))
+        for li in input_labels:
+            for lj in input_labels:
+                possible_baselines.add((li, lj))
 
         test_bl = sorted(list(possible_baselines))
         # Test that each baseline (or its reverse-order counterpart) is present in the
@@ -174,4 +175,16 @@ class test_CBF(unittest.TestCase):
         self.assertEqual(nonzero_baselines(test_data),
                          all_nonzero_baselines(test_data))
 
+        # Save initial f-engine equalisations
+        initial_equalisations = {input: eq_info['eq'] for input, eq_info
+                                in self.correlator.feng_eq_get().items()}
+        def restore_initial_equalisations():
+            for input, eq in initial_equalisations.items():
+                self.correlator.feng_eq_set(source_name=input, new_eq=eq)
+        self.addCleanup(restore_initial_equalisations)
 
+        # Set all inputs to zero, and check that output product is all-zero
+        for input in input_labels:
+            self.correlator.feng_eq_set(source_name=input, new_eq=0)
+        test_data = self.receiver.get_clean_dump(DUMP_TIMEOUT)['xeng_raw']
+        self.assertFalse(nonzero_baselines(test_data))
