@@ -14,8 +14,12 @@ from corr2.corr_rx import CorrRx
 
 from mkat_fpga_tests import correlator_fixture
 from mkat_fpga_tests.utils import normalised_magnitude, loggerise, complexise
+from mkat_fpga_tests.utils import init_dsim_sources
+from mkat_fpga_tests.utils import nonzero_baselines, zero_baselines, all_nonzero_baselines
 
 LOGGER = logging.getLogger(__name__)
+
+DUMP_TIMEOUT = 10              # How long to wait for a correlator dump to arrive in tests
 
 def get_vacc_offset(xeng_raw):
     """Assuming a tone was only put into input 0, figure out if VACC is roated by 1"""
@@ -36,14 +40,16 @@ class test_CBF(unittest.TestCase):
         start_thread_with_cleanup(self, self.receiver, start_timeout=1)
         self.correlator = correlator_fixture.correlator
         self.corr_fix = correlator_fixture
-        # Make sure the x-engines are not yet dumping
-        self.corr_fix.stop_x_data()
         dsim_conf = self.correlator.configd['dsimengine']
         dig_host = dsim_conf['host']
         self.dhost = FpgaDsimHost(dig_host, config=dsim_conf)
         self.dhost.get_system_information()
         # Increase the dump rate so tests can run faster
         self.correlator.xeng_set_acc_time(0.2)
+        self.corr_fix.issue_metadata()
+        self.addCleanup(self.corr_fix.stop_x_data)
+        self.corr_fix.start_x_data()
+
 
     # TODO 2015-05-27 (NM) Do test using get_vacc_offset(test_dump['xeng_raw']) to see if
     # the VACC is rotated. Run this test first so that we know immediately that other
@@ -60,28 +66,15 @@ class test_CBF(unittest.TestCase):
         test_chan = 1500
         expected_fc = f_start + delta_f*test_chan
 
+        init_dsim_sources(self.dhost)
         self.dhost.sine_sources.sin_0.set(frequency=expected_fc, scale=0.25)
         # The signal source is going to quantise the requested freqency, so see what we
         # actually got
         source_fc = self.dhost.sine_sources.sin_0.frequency
-        self.dhost.sine_sources.sin_1.set(frequency=expected_fc, scale=0)
-        self.dhost.sine_sources.sin_corr.set(frequency=expected_fc, scale=0)
-        self.dhost.noise_sources.noise_0.set(scale=0.0)
-        self.dhost.noise_sources.noise_1.set(scale=0)
-        self.dhost.noise_sources.noise_corr.register.write(scale=0)
-        self.dhost.outputs.out_0.select_output('signal')
-        self.dhost.outputs.out_1.select_output('signal')
-        self.dhost.outputs.out_0.scale_output(0.5)
-        self.dhost.outputs.out_1.scale_output(0.5)
-
-        self.corr_fix.issue_metadata()
-        self.addCleanup(self.corr_fix.stop_x_data)
-        self.corr_fix.start_x_data()
 
         # Get baseline 0 data, i.e. auto-corr of m000h
         test_baseline = 0
-        dump_timeout = 10
-        test_data = self.receiver.get_clean_dump(dump_timeout)['xeng_raw']
+        test_data = self.receiver.get_clean_dump(DUMP_TIMEOUT)['xeng_raw']
         b_mag = normalised_magnitude(test_data[:, test_baseline, :])
         # find channel with max power
         max_chan = np.argmax(b_mag)
@@ -110,7 +103,7 @@ class test_CBF(unittest.TestCase):
             else:
                 self.dhost.sine_sources.sin_0.set(frequency=freq, scale=0.125)
                 this_source_freq = self.dhost.sine_sources.sin_0.frequency
-                this_freq_data = self.receiver.get_clean_dump(dump_timeout)['xeng_raw']
+                this_freq_data = self.receiver.get_clean_dump(DUMP_TIMEOUT)['xeng_raw']
                 this_freq_response = normalised_magnitude(
                     this_freq_data[:, test_baseline, :])
             signal_chan_test_freqs[i] = this_source_freq
@@ -142,3 +135,43 @@ class test_CBF(unittest.TestCase):
         # pyplot.ion()
         # pyplot.show()
         # import IPython ; IPython.embed()
+
+    def test_product_baselines(self):
+        """CBF Baseline Correlation Products: VR.C.19, TP.C.1.3"""
+
+        init_dsim_sources(self.dhost)
+        # Put some correlated noise on both outputs
+        self.dhost.noise_sources.noise_corr.set(scale=0.5)
+        test_dump = self.receiver.get_clean_dump(DUMP_TIMEOUT)
+
+        # Get list of all the correlator input labels
+        bl_input_labels = sorted(tuple(test_dump['input_labelling'][:,0]))
+        # Get list of all the baselines present in the correlator output
+        present_baselines = sorted(
+            set(tuple(bl) for bl in test_dump['bls_ordering']))
+
+        # Make a list of all possible baselines (including redundant baselines) for the
+        # given list of inputs
+        possible_baselines = set()
+        for bi in bl_input_labels:
+            for bj in bl_input_labels:
+                possible_baselines.add((bi, bj))
+
+        test_bl = sorted(list(possible_baselines))
+        # Test that each baseline (or its reverse-order counterpart) is present in the
+        # correlator output
+        baseline_is_present = {}
+
+        for test_bl in possible_baselines:
+           baseline_is_present[test_bl] = (test_bl in present_baselines or
+                                           test_bl[::-1] in present_baselines)
+        self.assertTrue(all(baseline_is_present.values()),
+                        "Not all baselines are present in correlator output.")
+
+        test_data = test_dump['xeng_raw']
+        # Expect all baselines and all channels to be non-zero
+        self.assertFalse(zero_baselines(test_data))
+        self.assertEqual(nonzero_baselines(test_data),
+                         all_nonzero_baselines(test_data))
+
+

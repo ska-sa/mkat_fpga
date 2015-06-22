@@ -23,3 +23,38 @@ def loggerise(data, dynamic_range=70):
     min_log_clip = max_log - dynamic_range
     log_data[log_data < min_log_clip] = min_log_clip
     return log_data
+
+
+def baseline_checker(xeng_raw, check_fn):
+    """Apply a test function to correlator data one baseline at a time
+
+    Returns a set of all the baseline indices for which the test matches
+    """
+    baselines = set()
+    for bl in range(xeng_raw.shape[1]):
+        if check_fn(xeng_raw[:, bl, :]):
+            baselines.add(bl)
+    return baselines
+
+def zero_baselines(xeng_raw):
+    """Return baseline indices that have all-zero data"""
+    return baseline_checker(xeng_raw, lambda bldata: np.all(bldata == 0))
+
+def nonzero_baselines(xeng_raw):
+    """Return baseline indices that have some non-zero data"""
+    return baseline_checker(xeng_raw, lambda bldata: np.any(bldata != 0))
+
+def all_nonzero_baselines(xeng_raw):
+    """Return baseline indices that have all non-zero data"""
+    return baseline_checker(xeng_raw, lambda bldata: np.all(np.linalg.norm(
+                    bldata.astype(np.float64), axis=1) != 0))
+
+def init_dsim_sources(dhost):
+    """Select dsim signal output, zero all sources, output scalings to 0.5"""
+    for sin_source in dhost.sine_sources:
+        sin_source.set(frequency=0, scale=0)
+    for noise_source in dhost.noise_sources:
+        noise_source.set(scale=0)
+    for output in dhost.outputs:
+        output.select_output('signal')
+        output.scale_output(0.5)
