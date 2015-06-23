@@ -2,11 +2,15 @@ from __future__ import division
 
 import unittest
 import logging
+import matplotlib
+import matplotlib.pyplot as plt
 
 import time
 import itertools
 
 import numpy as np
+
+from unittest.util import strclass
 
 from katcp.testutils import start_thread_with_cleanup
 from corr2.dsimhost_fpga import FpgaDsimHost
@@ -46,10 +50,9 @@ class test_CBF(unittest.TestCase):
         self.dhost.get_system_information()
         # Increase the dump rate so tests can run faster
         self.correlator.xeng_set_acc_time(0.2)
-        self.corr_fix.issue_metadata()
         self.addCleanup(self.corr_fix.stop_x_data)
         self.corr_fix.start_x_data()
-
+        self.corr_fix.issue_metadata()
 
     # TODO 2015-05-27 (NM) Do test using get_vacc_offset(test_dump['xeng_raw']) to see if
     # the VACC is rotated. Run this test first so that we know immediately that other
@@ -122,6 +125,33 @@ class test_CBF(unittest.TestCase):
         min_chan_response = np.min(10*np.log10(chan_responses[:, test_chan]))
         chan_ripple = max_chan_response - min_chan_response
         acceptable_ripple_lt = 0.3
+
+        matplotlib.use('Agg')
+        fig = plt.plot(desired_chan_test_freqs, loggerise(chan_responses[:, test_chan],
+                       dynamic_range=60))[0]
+        axes = fig.get_axes()
+        ybound = axes.get_ybound()
+        yb_diff = abs(ybound[1] - ybound[0])
+        new_ybound = [ybound[0] - yb_diff*1.1, ybound[1] + yb_diff * 1.1]
+        plt.vlines(expected_fc, *new_ybound, colors='r', label='chan fc')
+        plt.vlines(expected_fc - delta_f / 2, *new_ybound, label='chan min/max')
+        plt.vlines(expected_fc - 0.8*delta_f / 2, *new_ybound, label='chan +-40%',
+                   linestyles='dashed')
+        plt.vlines(expected_fc + delta_f / 2, *new_ybound, label='_chan max')
+        plt.vlines(expected_fc + 0.8*delta_f / 2, *new_ybound, label='_chan +40%',
+                   linestyles='dashed')
+        plt.legend()
+        plt.title('Channel {} ({} MHz) response'.format(
+            test_chan, expected_fc/1e6))
+        axes.set_ybound(*new_ybound)
+        plt.grid(True)
+        plt.ylabel('dB relative to VACC max')
+        plt.xlabel('Frequency (Hz)')
+        graph_name = '{}.{}.channel_response.svg'.format(strclass(self.__class__),
+                                                         self._testMethodName)
+        plt.savefig(graph_name)
+        plt.close()
+
         self.assertLess(chan_ripple, acceptable_ripple_lt,
                         'ripple {} dB within 80% of channel fc is >= {} dB'
                         .format(chan_ripple, acceptable_ripple_lt))
@@ -132,7 +162,7 @@ class test_CBF(unittest.TestCase):
         # linestyles = itertools.cycle(itertools.product(style_cycle, colour_cycle))
         # for i, freq in enumerate(desired_chan_test_freqs):
         #     style, colour = linestyles.next()
-        #     pyplot.plot(loggerise(chan_responses[i], dynamic_range=60), color=colour, ls=style)
+        #     pyplot.plot(loggerise(chan_responses[:, i], dynamic_range=60), color=colour, ls=style)
         # pyplot.ion()
         # pyplot.show()
         # import IPython ; IPython.embed()
