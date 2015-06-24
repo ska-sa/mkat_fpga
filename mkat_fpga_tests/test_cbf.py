@@ -188,3 +188,37 @@ class test_CBF(unittest.TestCase):
             self.correlator.feng_eq_set(source_name=input, new_eq=0)
         test_data = self.receiver.get_clean_dump(DUMP_TIMEOUT)['xeng_raw']
         self.assertFalse(nonzero_baselines(test_data))
+        #-----------------------------------
+#        input_labels = ['m000_x', 'm000_y', 'm001_x', 'm001_y']
+        all_inputs = sorted(set(input_labels))
+        zero_inputs = set(input_labels)
+        nonzero_inputs = set()
+
+        def calc_zero_and_nonzero_baselines(nonzero_inputs):
+            nonzeros = set()
+            zeros = set()
+            for inp_i in all_inputs:
+                for inp_j in all_inputs:
+                    if inp_i in nonzero_inputs and inp_j in nonzero_inputs:
+                            nonzeros.add((inp_i, inp_j))
+                    else:
+                        zeros.add((inp_i, inp_j))
+            return zeros, nonzeros
+
+        zero_baseline, nonzero_baseline = calc_zero_and_nonzero_baselines(nonzero_inputs)
+
+        def print_baselines():
+            print ('zeros: {}\n\nnonzeros: {}\n\nnonzero-baselines: {}\n\n '
+                'zero-baselines: {}\n\n'.format(
+                    sorted(zero_inputs), sorted(nonzero_inputs),
+                    sorted(nonzero_baseline), sorted(zero_baseline)))
+
+        #print_baselines()
+        for inp in input_labels:
+            old_eqs = initial_equalisations[inp]
+            self.correlator.feng_eq_set(source_name=inp, new_eq=old_eqs)
+            zero_inputs.remove(inp)
+            nonzero_inputs.add(inp)
+            zero_baseline, nonzero_baseline = calc_zero_and_nonzero_baselines(nonzero_inputs)
+         #   print_baselines()
+        #print self.correlator.feng_eq_get().items()
