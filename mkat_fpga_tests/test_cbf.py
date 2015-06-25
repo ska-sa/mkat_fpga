@@ -20,6 +20,7 @@ from mkat_fpga_tests import correlator_fixture
 from mkat_fpga_tests.utils import normalised_magnitude, loggerise, complexise
 from mkat_fpga_tests.utils import init_dsim_sources
 from mkat_fpga_tests.utils import nonzero_baselines, zero_baselines, all_nonzero_baselines
+from mkat_fpga_tests.utils import CorrelatorFrequencyInfo
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class test_CBF(unittest.TestCase):
         start_thread_with_cleanup(self, self.receiver, start_timeout=1)
         self.correlator = correlator_fixture.correlator
         self.corr_fix = correlator_fixture
+        self.corr_freqs = CorrelatorFrequencyInfo(self.correlator.configd)
         dsim_conf = self.correlator.configd['dsimengine']
         dig_host = dsim_conf['host']
         self.dhost = FpgaDsimHost(dig_host, config=dsim_conf)
@@ -60,15 +62,8 @@ class test_CBF(unittest.TestCase):
 
     def test_channelisation(self):
         """TP.C.1.19 CBF Channelisation Wideband Coarse L-band"""
-        cconfig = self.correlator.configd
-        n_chans = int(cconfig['fengine']['n_chans'])
-        BW = float(cconfig['fengine']['bandwidth'])
-        delta_f = BW / n_chans
-        f_start = 0. # Center freq of the first bin
-        chan_freqs = f_start + np.arange(n_chans)*delta_f
-
         test_chan = 1500
-        expected_fc = f_start + delta_f*test_chan
+        expected_fc = self.corr_freqs.chan_freqs[test_chan]
 
         init_dsim_sources(self.dhost)
         self.dhost.sine_sources.sin_0.set(frequency=expected_fc, scale=0.25)
@@ -87,19 +82,20 @@ class test_CBF(unittest.TestCase):
 
         # Place frequency samples spaced 0.1 of a channel-width over the central 80% of
         # the channel (assuming nr_freq_samples == 9)
+        requested_sample_freqs = self.corr_freqs.calc_freq_samples(
+            test_chan, samples_per_chan=101, chans_around=5)
         nr_freq_samples = 9
         # TODO 2015-05-27 (NM) This should be from -0.4 to 0.4, but the current dsim
         # doesn't have enough resolution to place a sample sufficiently close to -0.4
         # without going outside the range
-        desired_chan_test_freqs = expected_fc + delta_f*np.linspace(
-            -0.35, 0.35, nr_freq_samples)
         # Placeholder of actual frequencies that the signal generator produces
-        signal_chan_test_freqs = np.zeros_like(desired_chan_test_freqs)
+        actual_chan_test_freqs = []
         # Channel magnitude responses for each frequency
-        chan_responses = np.zeros((nr_freq_samples, n_chans))
-        for i, freq in enumerate(desired_chan_test_freqs):
+        chan_responses = []
+        last_source_freq = None
+        for i, freq in enumerate(requested_sample_freqs):
             LOGGER.info('Getting channel response for freq {}/{}: {} MHz.'.format(
-                i+1, len(desired_chan_test_freqs), freq/1e6))
+                i+1, len(requested_sample_freqs), freq/1e6))
             if freq == expected_fc:
                 # We've already done this one!
                 this_source_freq = source_fc
@@ -107,38 +103,37 @@ class test_CBF(unittest.TestCase):
             else:
                 self.dhost.sine_sources.sin_0.set(frequency=freq, scale=0.125)
                 this_source_freq = self.dhost.sine_sources.sin_0.frequency
+                if this_source_freq == last_source_freq:
+                    LOGGER.info('Skipping channel response for freq {}/{}: {} MHz.\n'
+                                'Digitiser frequency is same as previous.'.format(
+                                    i+1, len(requested_sample_freqs), freq/1e6))
+                    continue    # Already calculated this one
+                else:
+                    last_source_freq = this_source_freq
                 this_freq_data = self.receiver.get_clean_dump(DUMP_TIMEOUT)['xeng_raw']
                 this_freq_response = normalised_magnitude(
                     this_freq_data[:, test_baseline, :])
-            signal_chan_test_freqs[i] = this_source_freq
-            chan_responses[i] = this_freq_response
+            signal_test_freqs.append(this_source_freq)
+            chan_responses.append(this_freq_response)
         self.corr_fix.stop_x_data()
-        for i, freq in enumerate(desired_chan_test_freqs):
-            max_chan = np.argmax(chan_responses[i])
-            self.assertEqual(max_chan, test_chan, 'Source freq {} peak not in channel '
-                             '{} as expected but in {}.'
-                             .format(signal_chan_test_freqs[i], test_chan, max_chan))
-        self.assertLess(np.max(chan_responses[:, test_chan]), 0.99,
-                        'VACC output at > 99% of maximum value, indicates that '
-                        'something, somewhere, is probably overranging.')
-        max_chan_response = np.max(10*np.log10(chan_responses[:, test_chan]))
-        min_chan_response = np.min(10*np.log10(chan_responses[:, test_chan]))
-        chan_ripple = max_chan_response - min_chan_response
-        acceptable_ripple_lt = 0.3
 
-       # matplotlib.use('Agg')
-        fig = plt.plot(desired_chan_test_freqs, loggerise(chan_responses[:, test_chan],
-                       dynamic_range=60))[0]
+        # Convert the lists to numpy arrays for easier working
+        signal_test_freqs = np.array(signal_test_freqs)
+        chan_responses = np.array(chan_responses)
+
+        df = self.corr_freqs.delta_f
+        fig = plt.plot(signal_test_freqs, loggerise(chan_responses[:, test_chan],
+                       dynamic_range=90))[0]
         axes = fig.get_axes()
         ybound = axes.get_ybound()
         yb_diff = abs(ybound[1] - ybound[0])
         new_ybound = [ybound[0] - yb_diff*1.1, ybound[1] + yb_diff * 1.1]
         plt.vlines(expected_fc, *new_ybound, colors='r', label='chan fc')
-        plt.vlines(expected_fc - delta_f / 2, *new_ybound, label='chan min/max')
-        plt.vlines(expected_fc - 0.8*delta_f / 2, *new_ybound, label='chan +-40%',
+        plt.vlines(expected_fc - df / 2, *new_ybound, label='chan min/max')
+        plt.vlines(expected_fc - 0.8*df / 2, *new_ybound, label='chan +-40%',
                    linestyles='dashed')
-        plt.vlines(expected_fc + delta_f / 2, *new_ybound, label='_chan max')
-        plt.vlines(expected_fc + 0.8*delta_f / 2, *new_ybound, label='_chan +40%',
+        plt.vlines(expected_fc + df / 2, *new_ybound, label='_chan max')
+        plt.vlines(expected_fc + 0.8*df / 2, *new_ybound, label='_chan +40%',
                    linestyles='dashed')
         plt.legend()
         plt.title('Channel {} ({} MHz) response'.format(
@@ -152,6 +147,29 @@ class test_CBF(unittest.TestCase):
         plt.savefig(graph_name)
         plt.close()
 
+        # Get responses for central 80% of channel
+        df = self.corr_freqs.delta_f
+        central_indices = (
+            (signal_test_freqs <= expected_fc + 0.8*df) &
+            (signal_test_freqs >= expected_fc - 0.8*df))
+        central_chan_responses = chan_responses[central_indices]
+        central_chan_test_freqs = signal_test_freqs[central_indices]
+        # Test responses in central 80% of channel
+        for i, freq in enumerate(central_chan_test_freqs):
+            max_chan = np.argmax(np.abs(central_chan_responses[i]))
+            self.assertEqual(max_chan, test_chan, 'Source freq {} peak not in channel '
+                             '{} as expected but in {}.'
+                             .format(freq, test_chan, max_chan))
+        self.assertLess(
+            np.max(np.abs(central_chan_responses[:, test_chan])), 0.99,
+            'VACC output at > 99% of maximum value, indicates that '
+            'something, somewhere, is probably overranging.')
+        max_central_chan_response = np.max(10*np.log10(central_chan_responses[:, test_chan]))
+        min_central_chan_response = np.min(10*np.log10(central_chan_responses[:, test_chan]))
+        chan_ripple = max_chan_response - min_chan_response
+        acceptable_ripple_lt = 0.3
+
+
         self.assertLess(chan_ripple, acceptable_ripple_lt,
                         'ripple {} dB within 80% of channel fc is >= {} dB'
                         .format(chan_ripple, acceptable_ripple_lt))
@@ -160,7 +178,7 @@ class test_CBF(unittest.TestCase):
         # colour_cycle = 'rgbyk'
         # style_cycle = ['-', '--']
         # linestyles = itertools.cycle(itertools.product(style_cycle, colour_cycle))
-        # for i, freq in enumerate(desired_chan_test_freqs):
+        # for i, freq in enumerate(signal_test_freqs):
         #     style, colour = linestyles.next()
         #     pyplot.plot(loggerise(chan_responses[:, i], dynamic_range=60), color=colour, ls=style)
         # pyplot.ion()

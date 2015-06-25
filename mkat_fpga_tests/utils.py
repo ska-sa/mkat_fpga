@@ -58,3 +58,63 @@ def init_dsim_sources(dhost):
     for output in dhost.outputs:
         output.select_output('signal')
         output.scale_output(0.5)
+
+class CorrelatorFrequencyInfo(object):
+    """Derrive various bits of correlator frequency info using correlator config"""
+
+    def __init__(self, corr_config):
+        """Initialise the class
+
+        Parameters
+        ==========
+        corr_config : dict
+            Correlator config dict as in :attr:`corr2.fxcorrelator.FxCorrelator.configd`
+
+        """
+        self.corr_config = corr_config
+        self.n_chans = int(corr_config['fengine']['n_chans'])
+        "Number of frequency channels"
+        self.bandwidth = float(corr_config['fengine']['bandwidth'])
+        "Correlator bandwidth"
+        self.delta_f = self.bandwidth / self.n_chans
+        "Spacing between frequency channels"
+        f_start = 0. # Center freq of the first bin
+        self.chan_freqs = f_start + np.arange(self.n_chans)*self.delta_f
+        "Channel centre frequencies"
+
+    def calc_freq_samples(self, chan, samples_per_chan, chans_around=0):
+        """Calculate frequency points to sweep over a test channel.
+
+        Parameters
+        =========
+        chan : int
+           Channel number around which to place frequency samples
+        samples_per_chan: int
+           Number of frequency points per channel
+        chans_around: int
+           Number of channels to include around the test channel. I.e. value 1 will
+           include one extra channel above and one below the test channel.
+
+        Will put frequency sample on channel boundary if 2 or more points per channel are
+        requested, and if will place a point in the centre of the chanel if an odd number
+        of points are specified.
+
+        """
+        assert samples_per_chan > 0
+        assert chans_around > 0
+        assert 0 <= chans < self.n_chans
+        assert 0 <= chans + chans_around < self.n_chans
+        assert 0 <= chans - chans_around < self.n_chans
+
+        fc = self.chan_freqs[centre_chan]
+        start_chan = chan - chans_around
+        end_chan = chan + chans_around
+        if samples_per_chan == 1:
+            return self.chan_freqs[start_chan:end_chan+1]
+
+        start_freq = self.chan_freqs[start_chan] - self.delta_f/2
+        end_freq = self.chan_freqs[end_chan] + self.delta_f/2
+        sample_spacing = self.delta_f / (samples_per_chan - 1)
+        num_samples = int(np.round(
+            (end_freq - start_freq) / sample_spacing)) + 1
+        return np.linspace(start_freq, end_freq, num_samples)
