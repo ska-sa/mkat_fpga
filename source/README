@@ -1,1 +1,7 @@
 Simulink model files and other development source files
+
+changes to .slx files should be committed before compiling. This ensures bitstreams
+can be matched with the source used to build them. (BEWARE) This may result in non-compilable and/or
+non-working slx files in git repo. 
+
+Compiled bitstreams should be placed in bitstreams folder (see bitstreams/README)
