@@ -199,7 +199,7 @@ class test_CBF(unittest.TestCase):
             for inp_i in all_inputs:
                 for inp_j in all_inputs:
                     if inp_i in nonzero_inputs and inp_j in nonzero_inputs:
-                            nonzeros.add((inp_i, inp_j))
+                        nonzeros.add((inp_i, inp_j))
                     else:
                         zeros.add((inp_i, inp_j))
             return zeros, nonzeros
