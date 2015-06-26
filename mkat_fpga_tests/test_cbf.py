@@ -77,25 +77,27 @@ class test_CBF(unittest.TestCase):
         b_mag = normalised_magnitude(test_data[:, test_baseline, :])
         # find channel with max power
         max_chan = np.argmax(b_mag)
-        self.assertEqual(max_chan, test_chan,
-                         'Channel with max power is not the test channel')
+        # self.assertEqual(max_chan, test_chan,
+        #                  'Channel with max power is not the test channel')
 
         # Place frequency samples spaced 0.1 of a channel-width over the central 80% of
         # the channel (assuming nr_freq_samples == 9)
-        requested_sample_freqs = self.corr_freqs.calc_freq_samples(
+        requested_test_freqs = self.corr_freqs.calc_freq_samples(
             test_chan, samples_per_chan=101, chans_around=5)
-        nr_freq_samples = 9
+        # nr_freq_samples = 9
         # TODO 2015-05-27 (NM) This should be from -0.4 to 0.4, but the current dsim
         # doesn't have enough resolution to place a sample sufficiently close to -0.4
         # without going outside the range
         # Placeholder of actual frequencies that the signal generator produces
-        actual_chan_test_freqs = []
+        actual_test_freqs = []
         # Channel magnitude responses for each frequency
         chan_responses = []
         last_source_freq = None
-        for i, freq in enumerate(requested_sample_freqs):
-            LOGGER.info('Getting channel response for freq {}/{}: {} MHz.'.format(
-                i+1, len(requested_sample_freqs), freq/1e6))
+        for i, freq in enumerate(requested_test_freqs):
+            # LOGGER.info('Getting channel response for freq {}/{}: {} MHz.'.format(
+            #     i+1, len(requested_test_freqs), freq/1e6))
+            print ('Getting channel response for freq {}/{}: {} MHz.'.format(
+                i+1, len(requested_test_freqs), freq/1e6))
             if freq == expected_fc:
                 # We've already done this one!
                 this_source_freq = source_fc
@@ -106,23 +108,23 @@ class test_CBF(unittest.TestCase):
                 if this_source_freq == last_source_freq:
                     LOGGER.info('Skipping channel response for freq {}/{}: {} MHz.\n'
                                 'Digitiser frequency is same as previous.'.format(
-                                    i+1, len(requested_sample_freqs), freq/1e6))
+                                    i+1, len(requested_test_freqs), freq/1e6))
                     continue    # Already calculated this one
                 else:
                     last_source_freq = this_source_freq
                 this_freq_data = self.receiver.get_clean_dump(DUMP_TIMEOUT)['xeng_raw']
                 this_freq_response = normalised_magnitude(
                     this_freq_data[:, test_baseline, :])
-            signal_test_freqs.append(this_source_freq)
+            actual_test_freqs.append(this_source_freq)
             chan_responses.append(this_freq_response)
         self.corr_fix.stop_x_data()
 
         # Convert the lists to numpy arrays for easier working
-        signal_test_freqs = np.array(signal_test_freqs)
+        actual_test_freqs = np.array(actual_test_freqs)
         chan_responses = np.array(chan_responses)
 
         df = self.corr_freqs.delta_f
-        fig = plt.plot(signal_test_freqs, loggerise(chan_responses[:, test_chan],
+        fig = plt.plot(actual_test_freqs, loggerise(chan_responses[:, test_chan],
                        dynamic_range=90))[0]
         axes = fig.get_axes()
         ybound = axes.get_ybound()
@@ -141,6 +143,7 @@ class test_CBF(unittest.TestCase):
         axes.set_ybound(*new_ybound)
         plt.grid(True)
         plt.ylabel('dB relative to VACC max')
+        # TODO Normalise plot to frequency bins
         plt.xlabel('Frequency (Hz)')
         graph_name = '{}.{}.channel_response.svg'.format(strclass(self.__class__),
                                                          self._testMethodName)
@@ -150,10 +153,12 @@ class test_CBF(unittest.TestCase):
         # Get responses for central 80% of channel
         df = self.corr_freqs.delta_f
         central_indices = (
-            (signal_test_freqs <= expected_fc + 0.8*df) &
-            (signal_test_freqs >= expected_fc - 0.8*df))
+            (actual_test_freqs <= expected_fc + 0.8*df) &
+            (actual_test_freqs >= expected_fc - 0.8*df))
         central_chan_responses = chan_responses[central_indices]
-        central_chan_test_freqs = signal_test_freqs[central_indices]
+        central_chan_test_freqs = actual_test_freqs[central_indices]
+
+        import IPython ; IPython.embed()
         # Test responses in central 80% of channel
         for i, freq in enumerate(central_chan_test_freqs):
             max_chan = np.argmax(np.abs(central_chan_responses[i]))
@@ -178,7 +183,7 @@ class test_CBF(unittest.TestCase):
         # colour_cycle = 'rgbyk'
         # style_cycle = ['-', '--']
         # linestyles = itertools.cycle(itertools.product(style_cycle, colour_cycle))
-        # for i, freq in enumerate(signal_test_freqs):
+        # for i, freq in enumerate(actual_test_freqs):
         #     style, colour = linestyles.next()
         #     pyplot.plot(loggerise(chan_responses[:, i], dynamic_range=60), color=colour, ls=style)
         # pyplot.ion()

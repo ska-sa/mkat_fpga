@@ -102,11 +102,11 @@ class CorrelatorFrequencyInfo(object):
         """
         assert samples_per_chan > 0
         assert chans_around > 0
-        assert 0 <= chans < self.n_chans
-        assert 0 <= chans + chans_around < self.n_chans
-        assert 0 <= chans - chans_around < self.n_chans
+        assert 0 <= chan < self.n_chans
+        assert 0 <= chan + chans_around < self.n_chans
+        assert 0 <= chan - chans_around < self.n_chans
 
-        fc = self.chan_freqs[centre_chan]
+        fc = self.chan_freqs[chan]
         start_chan = chan - chans_around
         end_chan = chan + chans_around
         if samples_per_chan == 1:
