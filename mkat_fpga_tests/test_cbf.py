@@ -234,18 +234,36 @@ class test_CBF(unittest.TestCase):
                         zeros.add((inp_i, inp_j))
             return zeros, nonzeros
 
-        #zero_baseline, nonzero_baseline = calc_zero_and_nonzero_baselines(nonzero_inputs)
+        zero_baselines, nonzero_baselines = calc_zero_and_nonzero_baselines(nonzero_inputs)
         def print_baselines():
             print ('zeros: {}\n\nnonzeros: {}\n\nnonzero-baselines: {}\n\n '
                 'zero-baselines: {}\n\n'.format(
                     sorted(zero_inputs), sorted(nonzero_inputs),
-                    sorted(nonzero_baseline), sorted(zero_baseline)))
-        #print_baselines()
+                    sorted(nonzero_baselines), sorted(zero_baselines)))
+
         for inp in input_labels:
-            old_eqs = initial_equalisations[inp]
-            self.correlator.feng_eq_set(source_name=inp, new_eq=old_eqs)
+            old_eq = initial_equalisations[inp]
+            self.correlator.feng_eq_set(source_name=inp, new_eq=old_eq)
             zero_inputs.remove(inp)
             nonzero_inputs.add(inp)
-            #zero_baseline, nonzero_baseline = calc_zero_and_nonzero_baselines(nonzero_inputs)
-            #print_baselines()
+            zero_baselines, nonzero_baselines = calc_zero_and_nonzero_baselines(nonzero_inputs)
         #print self.correlator.feng_eq_get().items()
+        #-----------------------------------------------
+        #desired_nz_baselines = set(tuple(bl) for bl in test_dump['bls_ordering'])
+        ## Get new clean dump
+        #test_data = test_dump['xeng_raw']
+        #actual_nz_indices = nonzero_baselines(test_data)
+        #actual_nz_baselines = set()
+
+        #def blsindices_to_bls(desired_nz_baselines, actual_nz_indices, add_redundant = False):
+            #for ind in actual_nz_indices:
+                ##bls = tuple(test_dump['bls_ordering'][:,ind].flatten()) #include when using h5py
+                #bls = tuple(test_dump['bls_ordering'][ind].flatten())
+                #actual_nz_baselines.add(bls)
+                #actual_nz_baselines.add(bls[::-1])
+            #return actual_nz_baselines
+
+        #blsindices_to_bls(desired_nz_baselines, actual_nz_indices)
+        ## Expect all Non zero baselines to be non-zero
+        #self.assertEqual(actual_nz_baselines, nonzero_baseline)
+        ##import IPython ; IPython.embed()
