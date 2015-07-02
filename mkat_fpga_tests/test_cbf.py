@@ -203,7 +203,7 @@ class test_CBF(unittest.TestCase):
         # Expect all baselines and all channels to be non-zero
         self.assertFalse(zero_baselines(test_data))
         self.assertEqual(nonzero_baselines(test_data),
-                         all_nonzero_baselines(test_data))
+                        all_nonzero_baselines(test_data))
 
         # Save initial f-engine equalisations
         initial_equalisations = {input: eq_info['eq'] for input, eq_info
