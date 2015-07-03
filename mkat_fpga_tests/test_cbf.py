@@ -80,14 +80,9 @@ class test_CBF(unittest.TestCase):
         # self.assertEqual(max_chan, test_chan,
         #                  'Channel with max power is not the test channel')
 
-        # Place frequency samples spaced 0.1 of a channel-width over the central 80% of
-        # the channel (assuming nr_freq_samples == 9)
         requested_test_freqs = self.corr_freqs.calc_freq_samples(
             test_chan, samples_per_chan=101, chans_around=5)
-        # nr_freq_samples = 9
-        # TODO 2015-05-27 (NM) This should be from -0.4 to 0.4, but the current dsim
-        # doesn't have enough resolution to place a sample sufficiently close to -0.4
-        # without going outside the range
+
         # Placeholder of actual frequencies that the signal generator produces
         actual_test_freqs = []
         # Channel magnitude responses for each frequency
@@ -123,32 +118,35 @@ class test_CBF(unittest.TestCase):
         actual_test_freqs = np.array(actual_test_freqs)
         chan_responses = np.array(chan_responses)
 
-        df = self.corr_freqs.delta_f
-        fig = plt.plot(actual_test_freqs, loggerise(chan_responses[:, test_chan],
-                       dynamic_range=90))[0]
-        axes = fig.get_axes()
-        ybound = axes.get_ybound()
-        yb_diff = abs(ybound[1] - ybound[0])
-        new_ybound = [ybound[0] - yb_diff*1.1, ybound[1] + yb_diff * 1.1]
-        plt.vlines(expected_fc, *new_ybound, colors='r', label='chan fc')
-        plt.vlines(expected_fc - df / 2, *new_ybound, label='chan min/max')
-        plt.vlines(expected_fc - 0.8*df / 2, *new_ybound, label='chan +-40%',
-                   linestyles='dashed')
-        plt.vlines(expected_fc + df / 2, *new_ybound, label='_chan max')
-        plt.vlines(expected_fc + 0.8*df / 2, *new_ybound, label='_chan +40%',
-                   linestyles='dashed')
-        plt.legend()
-        plt.title('Channel {} ({} MHz) response'.format(
-            test_chan, expected_fc/1e6))
-        axes.set_ybound(*new_ybound)
-        plt.grid(True)
-        plt.ylabel('dB relative to VACC max')
-        # TODO Normalise plot to frequency bins
-        plt.xlabel('Frequency (Hz)')
+        def plot_and_save(freqs, data, plot_filename):
+            df = self.corr_freqs.delta_f
+            fig = plt.plot(freqs, data)[0]
+            axes = fig.get_axes()
+            ybound = axes.get_ybound()
+            yb_diff = abs(ybound[1] - ybound[0])
+            new_ybound = [ybound[0] - yb_diff*1.1, ybound[1] + yb_diff * 1.1]
+            plt.vlines(expected_fc, *new_ybound, colors='r', label='chan fc')
+            plt.vlines(expected_fc - df / 2, *new_ybound, label='chan min/max')
+            plt.vlines(expected_fc - 0.8*df / 2, *new_ybound, label='chan +-40%',
+                       linestyles='dashed')
+            plt.vlines(expected_fc + df / 2, *new_ybound, label='_chan max')
+            plt.vlines(expected_fc + 0.8*df / 2, *new_ybound, label='_chan +40%',
+                       linestyles='dashed')
+            plt.legend()
+            plt.title('Channel {} ({} MHz) response'.format(
+                test_chan, expected_fc/1e6))
+            axes.set_ybound(*new_ybound)
+            plt.grid(True)
+            plt.ylabel('dB relative to VACC max')
+            # TODO Normalise plot to frequency bins
+            plt.xlabel('Frequency (Hz)')
+            plt.savefig(plot_filename)
+            plt.close()
+
         graph_name = '{}.{}.channel_response.svg'.format(strclass(self.__class__),
                                                          self._testMethodName)
-        plt.savefig(graph_name)
-        plt.close()
+        plot_data_all  = loggerise(chan_responses[:, test_chan], dynamic_range=90)
+        plot_and_save(actual_test_freqs, plot_data_all, graph_name)
 
         # Get responses for central 80% of channel
         df = self.corr_freqs.delta_f
@@ -158,13 +156,14 @@ class test_CBF(unittest.TestCase):
         central_chan_responses = chan_responses[central_indices]
         central_chan_test_freqs = actual_test_freqs[central_indices]
 
-        import IPython ; IPython.embed()
         # Test responses in central 80% of channel
         for i, freq in enumerate(central_chan_test_freqs):
             max_chan = np.argmax(np.abs(central_chan_responses[i]))
             self.assertEqual(max_chan, test_chan, 'Source freq {} peak not in channel '
                              '{} as expected but in {}.'
                              .format(freq, test_chan, max_chan))
+
+        # TODO Graph the central 80%  too.
         self.assertLess(
             np.max(np.abs(central_chan_responses[:, test_chan])), 0.99,
             'VACC output at > 99% of maximum value, indicates that '
