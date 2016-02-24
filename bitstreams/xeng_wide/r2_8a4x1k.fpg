@@ -2200,9 +2200,9 @@
 ?meta sys3/xeng	casper:xeng	use_bram_delay	1
 ?meta 77777	77777	tags	casper:info,casper:spead_pack,casper:spead_unpack,casper:vacc,casper:xeng,xps:qdr,xps:sw_reg,xps:tengbe_v2,xps:xsg
 ?meta 77777	77777	system	r2_8a4x1k
-?meta 77777	77777	builddate	16-Feb-2016\_14:44:17
+?meta 77777	77777	builddate	23-Feb-2016\_16:36:29
 ?meta 77777_git rcs /home/mkat_fpga/source/xeng_wide/r2_8a4x1k.slx git_info_found 1
-?meta 77777_git rcs /home/mkat_fpga/source/xeng_wide/r2_8a4x1k.slx commit_hash b93cf759dcf3fd2cd6d4ba17dc17cd288c1519be
+?meta 77777_git rcs /home/mkat_fpga/source/xeng_wide/r2_8a4x1k.slx commit_hash 5f179ca4627ccd91403ed12ea853ba3d76df1781
 ?meta 77777_git rcs /home/mkat_fpga/source/xeng_wide/r2_8a4x1k.slx status unmodified
 ?meta 77777_git rcs /home/mkat_fpga/source/xeng_wide/r2_8a4x1k.slx core.logallrefupdates true
 ?meta 77777_git rcs /home/mkat_fpga/source/xeng_wide/r2_8a4x1k.slx core.filemode true
@@ -2236,7 +2236,7 @@
 ?meta 77777_git rcs /home/mlib_devel branch.master.merge refs/heads/master
 ?meta 77777_git rcs /home/mlib_devel remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
 ?quit
-‹+ÃV system.bin ìı˜%GV
+‹‹ÌV system.bin ìı˜%GV
 ÌUuU­Ê*UK5­n)ºÔ#îÔÌÓ»£jA¿AG÷”˜‚§Û£*#Û’UÌ“m-†}-h!ì'<Ñ¥¨‘ñ|m¼àÏWB7oF`ï|óÍ`¸ÃŒm°…Õ<ã÷`aym³ìz×–eïØÚ8'ş#3ï½U]İ-}ªòfFÄ‰sNDŒˆŒ8ybgg8 ÀfaÅ†·ÿöúŸã*²›CxIgî¯pÎ¹ÆÉ7ô9Ãğ¿ÚÍ&,3Ö‘İä›Ò4(-ëB_³Ì„¡ÛÇgØÑÊ•é8½oş¿ñ(Óˆ:ã Ua,Ú!L?}­H‹†|ö	xrŞ-„‚í•Ám”R,†`‹«a• ßn-ßö.6(Á6&TÓj"›´èÈ+}}1hÂµ¢†P©ÙÀ^Â …x@³¬Iï–)§nÉ&:uMz×ÅópñºÑ|Ğ\G£+"Kƒ›p/)”ç@éÓy]:TîG·#!Ê"Ía¦Ó‡=F•t1šgN°U0õ?A!k Æ6NTqGóhªÎyÖ§Üó8‚êæ¹Å/ºEÉ%îibVÅ­ŒLÖwË/'ÂâıÌcës:š/W^c8áÑp/£44›9+)%TÅ,oæÓÒ›ÌÌ-R#ïf¿2*Ç4ş„¥Ñ$Øô%˜®Ã†›ô°€µ¨¯Iaæ)ÈÃœéİ™h…‘)•ÓëSÛ3}ÃÛÃ»ïÒCœøFÜQPm%ªÀ’Æ0½5ÀM¢Îe…M­rfI¸¢Ü¦>Š#µŒC»¦›BãT]3µ—øÃ!j¾dòÄÛ!ŠGo<…<f;ùB¥Zê
 ×.¼ S·şÃø7UTÜFJe)Mˆc!İ£Ã‘R†ázEÄÇãGÍ·ôÍK›Ì=¾ŸK”íÔ¾T:uş½˜tiÎ’›r™³p4-¾ã)Í9jÌw£Òáy	ıÙÔ‰ÉOñeRæaJÍĞİ€ ÉöhñJŒÉ(2k‘J°úÒŠUãÎ÷7óŠİÜıØiP´ !Ùê/`._òQ-…0”¼şç‚û:HY<Ñ‚ÚAEs]WÒi&¸î]KAÄ||Iòªpû—RYÂsæÂÒÇ—=¢Åı0W‹ÆÂGÒ·BJ±,^(¡>3Ï¯4Ã• ¿cÜİÜ^Ô·œı8(¡>\¸œ1†ãpË[5üÓ‘DƒtÄ½uÈm)Ï/ÈWƒïÈåUòuáÚü¢+LÉmHØ|Í|tøğïÓÕ²åA¨¯*£‹©¡_KÏâå1vf’²1Ã)Øôô¥ù}ˆÅG7CùÁv–×ç—vEÆ”^¾7zxj”¾:5S¦K}Iıòàìğ*r”ÇRšVÖ0¯ÎšGx?8“QŠ´,^9ëêÂµÀ
 Ng™‰×§só:jÎ§³<JOAã‹Jz–kº§!Ì/T¼Ÿ1ñY‡-AçC?Ò)•-3´!–9‹ò	HkéŒÑ,‹çdÈâ2	—/ÄÓe	ëïÅ^`×tdr6PÍ–ÿ?šxTš·&bDú•Í>ÓtÎxNÏÕ	œÆô4¾–~Îëù›øŒèİ:ã¸È¤åYŒ›§2¦<,^îÏ‘Œ	½ÆüüémWèöQ€9‹¸İ¬;§`ó…PG‡âMÈñMğªùnÿ†
