@@ -260,7 +260,7 @@
 ?meta bf0_config	xps:sw_reg	io_delay	0
 ?meta bf0_config	xps:sw_reg	sample_period	1
 ?meta bf0_config	xps:sw_reg	names	[rst\_beam_id\_n_partitions\_port\_txen]
-?meta bf0_config	xps:sw_reg	bitwidths	[1\_7\_n_bits_xengs\_16\_1]
+?meta bf0_config	xps:sw_reg	bitwidths	[1\_7\_6\_16\_1]
 ?meta bf0_config	xps:sw_reg	bin_pts	[0\_0\_0\_0\_0]
 ?meta bf0_config	xps:sw_reg	arith_types	[2\_0\_0\_0\_2]
 ?meta bf0_config	xps:sw_reg	sim_port	off
@@ -296,7 +296,7 @@
 ?meta bf0_partitions	xps:sw_reg	io_delay	0
 ?meta bf0_partitions	xps:sw_reg	sample_period	1
 ?meta bf0_partitions	xps:sw_reg	names	[partition0_offset\_partition1_offset\_partition2_offset\_partition3_offset]
-?meta bf0_partitions	xps:sw_reg	bitwidths	n_bits_xengs
+?meta bf0_partitions	xps:sw_reg	bitwidths	6
 ?meta bf0_partitions	xps:sw_reg	bin_pts	0
 ?meta bf0_partitions	xps:sw_reg	arith_types	0
 ?meta bf0_partitions	xps:sw_reg	sim_port	off
@@ -305,7 +305,7 @@
 ?meta bf1_config	xps:sw_reg	io_delay	0
 ?meta bf1_config	xps:sw_reg	sample_period	1
 ?meta bf1_config	xps:sw_reg	names	[rst\_beam_id\_n_partitions\_port\_txen]
-?meta bf1_config	xps:sw_reg	bitwidths	[1\_7\_n_bits_xengs\_16\_1]
+?meta bf1_config	xps:sw_reg	bitwidths	[1\_7\_6\_16\_1]
 ?meta bf1_config	xps:sw_reg	bin_pts	[0\_0\_0\_0\_0]
 ?meta bf1_config	xps:sw_reg	arith_types	[2\_0\_0\_0\_2]
 ?meta bf1_config	xps:sw_reg	sim_port	off
@@ -341,7 +341,7 @@
 ?meta bf1_partitions	xps:sw_reg	io_delay	0
 ?meta bf1_partitions	xps:sw_reg	sample_period	1
 ?meta bf1_partitions	xps:sw_reg	names	[partition0_offset\_partition1_offset\_partition2_offset\_partition3_offset]
-?meta bf1_partitions	xps:sw_reg	bitwidths	n_bits_xengs
+?meta bf1_partitions	xps:sw_reg	bitwidths	6
 ?meta bf1_partitions	xps:sw_reg	bin_pts	0
 ?meta bf1_partitions	xps:sw_reg	arith_types	0
 ?meta bf1_partitions	xps:sw_reg	sim_port	off
@@ -359,7 +359,7 @@
 ?meta bf_control	xps:sw_reg	io_delay	0
 ?meta bf_control	xps:sw_reg	sample_period	1
 ?meta bf_control	xps:sw_reg	names	[beng\_stream\_antenna]
-?meta bf_control	xps:sw_reg	bitwidths	[n_bits_ants\_1\_n_bits_ants]
+?meta bf_control	xps:sw_reg	bitwidths	[4\_1\_4]
 ?meta bf_control	xps:sw_reg	bin_pts	0
 ?meta bf_control	xps:sw_reg	arith_types	0
 ?meta bf_control	xps:sw_reg	sim_port	off
@@ -2191,36 +2191,36 @@
 ?meta spead_unpack3	casper:spead_unpack	spead_lsw	48
 ?meta spead_unpack3	casper:spead_unpack	spead_version	4
 ?meta spead_unpack3	casper:spead_unpack	combine_errors	on
-?meta sys0/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys0/vacc	casper:vacc	ants_bits	4
 ?meta sys0/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys0/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys0/vacc	casper:vacc	xeng_bits	6
 ?meta sys0/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys0/vacc	casper:vacc	tick_bits	0
 ?meta sys0/vacc	casper:vacc	which_qdr	qdr0
 ?meta sys0/vacc	casper:vacc	n_inputs	1
 ?meta sys0/vacc	casper:vacc	n_bits	32
 ?meta sys0/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys1/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys1/vacc	casper:vacc	ants_bits	4
 ?meta sys1/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys1/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys1/vacc	casper:vacc	xeng_bits	6
 ?meta sys1/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys1/vacc	casper:vacc	tick_bits	0
 ?meta sys1/vacc	casper:vacc	which_qdr	qdr1
 ?meta sys1/vacc	casper:vacc	n_inputs	1
 ?meta sys1/vacc	casper:vacc	n_bits	32
 ?meta sys1/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys2/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys2/vacc	casper:vacc	ants_bits	4
 ?meta sys2/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys2/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys2/vacc	casper:vacc	xeng_bits	6
 ?meta sys2/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys2/vacc	casper:vacc	tick_bits	0
 ?meta sys2/vacc	casper:vacc	which_qdr	qdr2
 ?meta sys2/vacc	casper:vacc	n_inputs	1
 ?meta sys2/vacc	casper:vacc	n_bits	32
 ?meta sys2/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys3/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys3/vacc	casper:vacc	ants_bits	4
 ?meta sys3/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys3/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys3/vacc	casper:vacc	xeng_bits	6
 ?meta sys3/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys3/vacc	casper:vacc	tick_bits	0
 ?meta sys3/vacc	casper:vacc	which_qdr	qdr3
@@ -2266,12 +2266,6 @@
 ?meta 77777	77777	tags	casper:bitsnap,casper:info,casper:snapshot,casper:spead_pack,casper:spead_unpack,casper:vacc,casper:xeng,xps:bram,xps:qdr,xps:sw_reg,xps:tengbe_v2,xps:xsg
 ?meta 77777	77777	system	r2_b16a4x64f_hc
 ?meta 77777	77777	builddate	11-May-2016\_17:14:12
-Traceback (most recent call last):
-  File "/mnt/secondary/rhel_root/opt/casper_library/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/mnt/secondary/rhel_root/opt/casper_library/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/jmanley/projects/mkat_fpga/source/beng/r2_b16a4x64f_hc.slx: hash length incorrect
 ?meta 77777_git	rcs	/mnt/secondary/rhel_root/opt/casper_library/mlib_devel	git_info_found	1
 ?meta 77777_git	rcs	/mnt/secondary/rhel_root/opt/casper_library/mlib_devel	commit_hash	6d994c8df10d141b9911294120d62d9f5a6ba34c
 ?meta 77777_git	rcs	/mnt/secondary/rhel_root/opt/casper_library/mlib_devel	status	unmodified
