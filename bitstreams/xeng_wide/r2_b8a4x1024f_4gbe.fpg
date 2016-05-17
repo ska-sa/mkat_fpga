@@ -260,7 +260,7 @@
 ?meta bf0_config	xps:sw_reg	io_delay	0
 ?meta bf0_config	xps:sw_reg	sample_period	1
 ?meta bf0_config	xps:sw_reg	names	[rst\_beam_id\_n_partitions\_port\_txen]
-?meta bf0_config	xps:sw_reg	bitwidths	[1\_7\_n_bits_xengs\_16\_1]
+?meta bf0_config	xps:sw_reg	bitwidths	[1\_7\_5\_16\_1]
 ?meta bf0_config	xps:sw_reg	bin_pts	[0\_0\_0\_0\_0]
 ?meta bf0_config	xps:sw_reg	arith_types	[2\_0\_0\_0\_2]
 ?meta bf0_config	xps:sw_reg	sim_port	off
@@ -296,7 +296,7 @@
 ?meta bf0_partitions	xps:sw_reg	io_delay	0
 ?meta bf0_partitions	xps:sw_reg	sample_period	1
 ?meta bf0_partitions	xps:sw_reg	names	[partition0_offset\_partition1_offset\_partition2_offset\_partition3_offset]
-?meta bf0_partitions	xps:sw_reg	bitwidths	n_bits_xengs
+?meta bf0_partitions	xps:sw_reg	bitwidths	5
 ?meta bf0_partitions	xps:sw_reg	bin_pts	0
 ?meta bf0_partitions	xps:sw_reg	arith_types	0
 ?meta bf0_partitions	xps:sw_reg	sim_port	off
@@ -305,7 +305,7 @@
 ?meta bf1_config	xps:sw_reg	io_delay	0
 ?meta bf1_config	xps:sw_reg	sample_period	1
 ?meta bf1_config	xps:sw_reg	names	[rst\_beam_id\_n_partitions\_port\_txen]
-?meta bf1_config	xps:sw_reg	bitwidths	[1\_7\_n_bits_xengs\_16\_1]
+?meta bf1_config	xps:sw_reg	bitwidths	[1\_7\_5\_16\_1]
 ?meta bf1_config	xps:sw_reg	bin_pts	[0\_0\_0\_0\_0]
 ?meta bf1_config	xps:sw_reg	arith_types	[2\_0\_0\_0\_2]
 ?meta bf1_config	xps:sw_reg	sim_port	off
@@ -341,7 +341,7 @@
 ?meta bf1_partitions	xps:sw_reg	io_delay	0
 ?meta bf1_partitions	xps:sw_reg	sample_period	1
 ?meta bf1_partitions	xps:sw_reg	names	[partition0_offset\_partition1_offset\_partition2_offset\_partition3_offset]
-?meta bf1_partitions	xps:sw_reg	bitwidths	n_bits_xengs
+?meta bf1_partitions	xps:sw_reg	bitwidths	5
 ?meta bf1_partitions	xps:sw_reg	bin_pts	0
 ?meta bf1_partitions	xps:sw_reg	arith_types	0
 ?meta bf1_partitions	xps:sw_reg	sim_port	off
@@ -359,7 +359,7 @@
 ?meta bf_control	xps:sw_reg	io_delay	0
 ?meta bf_control	xps:sw_reg	sample_period	1
 ?meta bf_control	xps:sw_reg	names	[beng\_stream\_antenna]
-?meta bf_control	xps:sw_reg	bitwidths	[n_bits_ants\_1\_n_bits_ants]
+?meta bf_control	xps:sw_reg	bitwidths	[3\_1\_3]
 ?meta bf_control	xps:sw_reg	bin_pts	0
 ?meta bf_control	xps:sw_reg	arith_types	0
 ?meta bf_control	xps:sw_reg	sim_port	off
@@ -2125,7 +2125,7 @@
 ?meta bfsnap_out	casper:bitsnap	extra_widths	[30\_2]
 ?meta bfsnap_out	casper:bitsnap	extra_bps	[0\_0]
 ?meta bfsnap_out	casper:bitsnap	extra_types	[0\_0]
-?meta compile_parameters	casper:info	info	fft_stages=13;n_bits_xengs=4
+?meta compile_parameters	casper:info	info	fft_stages=13;5=4
 ?meta bfsnap_out/ss	casper:snapshot	storage	bram
 ?meta bfsnap_out/ss	casper:snapshot	dram_dimm	2
 ?meta bfsnap_out/ss	casper:snapshot	dram_clock	250
@@ -2191,43 +2191,43 @@
 ?meta spead_unpack3	casper:spead_unpack	spead_lsw	48
 ?meta spead_unpack3	casper:spead_unpack	spead_version	4
 ?meta spead_unpack3	casper:spead_unpack	combine_errors	on
-?meta sys0/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys0/vacc	casper:vacc	ants_bits	3
 ?meta sys0/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys0/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys0/vacc	casper:vacc	xeng_bits	5
 ?meta sys0/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys0/vacc	casper:vacc	tick_bits	0
 ?meta sys0/vacc	casper:vacc	which_qdr	qdr0
 ?meta sys0/vacc	casper:vacc	n_inputs	1
 ?meta sys0/vacc	casper:vacc	n_bits	32
 ?meta sys0/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys1/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys1/vacc	casper:vacc	ants_bits	3
 ?meta sys1/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys1/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys1/vacc	casper:vacc	xeng_bits	5
 ?meta sys1/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys1/vacc	casper:vacc	tick_bits	0
 ?meta sys1/vacc	casper:vacc	which_qdr	qdr1
 ?meta sys1/vacc	casper:vacc	n_inputs	1
 ?meta sys1/vacc	casper:vacc	n_bits	32
 ?meta sys1/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys2/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys2/vacc	casper:vacc	ants_bits	3
 ?meta sys2/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys2/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys2/vacc	casper:vacc	xeng_bits	5
 ?meta sys2/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys2/vacc	casper:vacc	tick_bits	0
 ?meta sys2/vacc	casper:vacc	which_qdr	qdr2
 ?meta sys2/vacc	casper:vacc	n_inputs	1
 ?meta sys2/vacc	casper:vacc	n_bits	32
 ?meta sys2/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys3/vacc	casper:vacc	ants_bits	n_bits_ants
+?meta sys3/vacc	casper:vacc	ants_bits	3
 ?meta sys3/vacc	casper:vacc	freq_bits	n_bits_channels
-?meta sys3/vacc	casper:vacc	xeng_bits	n_bits_xengs
+?meta sys3/vacc	casper:vacc	xeng_bits	5
 ?meta sys3/vacc	casper:vacc	acc_bits	x_acc_bits
 ?meta sys3/vacc	casper:vacc	tick_bits	0
 ?meta sys3/vacc	casper:vacc	which_qdr	qdr3
 ?meta sys3/vacc	casper:vacc	n_inputs	1
 ?meta sys3/vacc	casper:vacc	n_bits	32
 ?meta sys3/vacc	casper:vacc	n_bits_flags	ones(1,19)
-?meta sys0/xeng	casper:xeng	n_ants	2^n_bits_ants
+?meta sys0/xeng	casper:xeng	n_ants	2^3
 ?meta sys0/xeng	casper:xeng	n_bits	8
 ?meta sys0/xeng	casper:xeng	acc_len	2^x_acc_bits
 ?meta sys0/xeng	casper:xeng	demux_factor	4
@@ -2236,7 +2236,7 @@
 ?meta sys0/xeng	casper:xeng	bram_latency	7
 ?meta sys0/xeng	casper:xeng	use_ded_mult	1
 ?meta sys0/xeng	casper:xeng	use_bram_delay	1
-?meta sys1/xeng	casper:xeng	n_ants	2^n_bits_ants
+?meta sys1/xeng	casper:xeng	n_ants	2^3
 ?meta sys1/xeng	casper:xeng	n_bits	8
 ?meta sys1/xeng	casper:xeng	acc_len	2^x_acc_bits
 ?meta sys1/xeng	casper:xeng	demux_factor	4
@@ -2245,7 +2245,7 @@
 ?meta sys1/xeng	casper:xeng	bram_latency	7
 ?meta sys1/xeng	casper:xeng	use_ded_mult	1
 ?meta sys1/xeng	casper:xeng	use_bram_delay	1
-?meta sys2/xeng	casper:xeng	n_ants	2^n_bits_ants
+?meta sys2/xeng	casper:xeng	n_ants	2^3
 ?meta sys2/xeng	casper:xeng	n_bits	8
 ?meta sys2/xeng	casper:xeng	acc_len	2^x_acc_bits
 ?meta sys2/xeng	casper:xeng	demux_factor	4
@@ -2254,7 +2254,7 @@
 ?meta sys2/xeng	casper:xeng	bram_latency	7
 ?meta sys2/xeng	casper:xeng	use_ded_mult	1
 ?meta sys2/xeng	casper:xeng	use_bram_delay	1
-?meta sys3/xeng	casper:xeng	n_ants	2^n_bits_ants
+?meta sys3/xeng	casper:xeng	n_ants	2^3
 ?meta sys3/xeng	casper:xeng	n_bits	8
 ?meta sys3/xeng	casper:xeng	acc_len	2^x_acc_bits
 ?meta sys3/xeng	casper:xeng	demux_factor	4
@@ -2266,92 +2266,6 @@
 ?meta 77777	77777	tags	casper:bitsnap,casper:info,casper:snapshot,casper:spead_pack,casper:spead_unpack,casper:vacc,casper:xeng,xps:bram,xps:qdr,xps:sw_reg,xps:tengbe_v2,xps:xsg
 ?meta 77777	77777	system	r2_b8a4x1024f_4gbe
 ?meta 77777	77777	builddate	16-May-2016\_11:52:31
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Desktop/beng_builds/r2_b8a4x1024f_4gbe.slx: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
-Error in sys.excepthook:
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/dist-packages/apport_python_hook.py", line 66, in apport_excepthook
-    from apport.fileutils import likely_packaged, get_recent_crashes
-  File "/usr/lib/python2.7/dist-packages/apport/__init__.py", line 1, in <module>
-    from apport.report import Report
-  File "/usr/lib/python2.7/dist-packages/apport/report.py", line 20, in <module>
-    import apport.fileutils
-  File "/usr/lib/python2.7/dist-packages/apport/fileutils.py", line 22, in <module>
-    from apport.packaging_impl import impl as packaging
-  File "/usr/lib/python2.7/dist-packages/apport/packaging_impl.py", line 20, in <module>
-    import apt
-  File "/usr/lib/python2.7/dist-packages/apt/__init__.py", line 21, in <module>
-    import apt_pkg
-ImportError: /home/andrew/Xilinx/14.7/ISE_DS/ISE/lib/lin64/libstdc++.so.6: version `GLIBCXX_3.4.9' not found (required by /usr/lib/python2.7/dist-packages/apt_pkg.so)
-
-Original exception was:
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Desktop/beng_builds/r2_b8a4x1024f_4gbe.slx: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Github/mlib_devel: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
-Error in sys.excepthook:
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/dist-packages/apport_python_hook.py", line 66, in apport_excepthook
-    from apport.fileutils import likely_packaged, get_recent_crashes
-  File "/usr/lib/python2.7/dist-packages/apport/__init__.py", line 1, in <module>
-    from apport.report import Report
-  File "/usr/lib/python2.7/dist-packages/apport/report.py", line 20, in <module>
-    import apport.fileutils
-  File "/usr/lib/python2.7/dist-packages/apport/fileutils.py", line 22, in <module>
-    from apport.packaging_impl import impl as packaging
-  File "/usr/lib/python2.7/dist-packages/apport/packaging_impl.py", line 20, in <module>
-    import apt
-  File "/usr/lib/python2.7/dist-packages/apt/__init__.py", line 21, in <module>
-    import apt_pkg
-ImportError: /home/andrew/Xilinx/14.7/ISE_DS/ISE/lib/lin64/libstdc++.so.6: version `GLIBCXX_3.4.9' not found (required by /usr/lib/python2.7/dist-packages/apt_pkg.so)
-
-Original exception was:
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Github/mlib_devel: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
 ?quit
 ãA±9W system.bin ÏΩêe«uvÓùû¡ùá∑ÿªãYp .©ﬁ·äÆ˘ÅKZ∞6{Üo…
 î»]âQ1Â°äíïîZHîôr‚®gv®aä*≤ã∂Ï™àQV(GiEQ…â¸@1£¿“REUI1ù@)…q ©eEÀ%yr>˝ΩÔﬁ˜ﬁÏ.IPÊôπØowü>}˙‹”ü€}∫ÔÒÒl ÄxfÜﬁˇÏﬂæˆΩ%@.XvuºøG{©ß‹∑ ˇ€˛…†ò8ø-‘¶˝Ø\∫U°¡q≈ ∆ËÖÛ√`	B>≥ÆËîØB¬å˚Ö/A⁄ÓLMﬁ*Ç:`hBù0ÃAù¶WQw¶ã‡QWy∫L√ùë∏Ã¢·é®ùôï›ó≠Cƒz>_÷πŸ≥Èt>lı›‚ﬁœaÙgNpkáüSZLr:Û‘ë≠Yx	ˇ;3;ì‹Gæ	lºeË7û÷ß„q⁄œ…÷VBjäë?Ωê…Í_Mìî–≠'¨s?ûWM<óGı@x‰ÿ&bÉn0 <çwD	´È ü≈Ä‚Í¡M≠ctı†flzN1ÜQöÁ‚«òRK˛jxÑ√B<*tè¿:“¿8X¢8q¡)ëd ^˚wô/Ãì‚7ô"Q¢‹¡Â•Èè˝ÅÇÀΩp· _b'≥Åì€«kk]S≠N“Ãá"ﬁñ·Æ*Z0˝„7YòIï˜V*E+(mÒÄcæp˘¡Rr(ÑRM>Sg|%ú÷-⁄ÿÄ¿WK√q-í¨√®AÙPsÚRÿx="X©◊<≤¯ul&‘9|≈u! 1Ö‘O¡˙”„t6ß£CÛÛ¿óíö¶Öñœ]Ö4iû	'"àíÈgèG(÷ ◊>mö_/åŸfÅ})xí Ö]Ã,{: „“Ç]©‡Èã®	õ“Ò«å1~º )U»eñ{>„JÚ+µ√V¢á%á*∫/ã◊`»:ä+Íπˆl ÖTyMË'q∫!ïÀÆ:jn©[´äÙ€´8WÙ,9Õ-°‹°«∏Ñ-pê¯™¢∞åXπT©ïÑB≥Ñ’È∫Á·hW%ßFÃ¢áa%WLã≥t<Ì±VUj›&ÂÜj++éÙR_?ñD¬”ö[Ä+[Z¯¶0Z˝E‚omîíá"—ßúVÆÒ(PBH¢ØùbîÌC˛ƒ'†d¿qÄh§MPLê»ãYŸ±©+B.¨√ Î˚©¬’OÂ⁄∂ÇÑQR„®,Tˇ4-áJ‘£Ç">!ÜRt+vÔM]SçªÓ¯‡W≥‚^<XÁ´øoÆ(TIQúI[éÂ8,≤'∏Gôem∫/îSé≤H2∆üQ◊1_ÆÎÖ◊ = ›2N '˚+ïp;›ß•%≥yLáFMC’Ëü2:É»¡

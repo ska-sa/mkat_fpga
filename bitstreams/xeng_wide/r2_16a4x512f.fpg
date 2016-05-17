@@ -2006,12 +2006,6 @@
 ?meta 77777	77777	n_bits_xengs	5
 ?meta 77777	77777	xeng_clk	225
 ?meta 77777	77777	xl_pb_trace	
-Traceback (most recent call last):
-  File "/mnt/secondary/rhel_root/opt/casper_library/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/mnt/secondary/rhel_root/opt/casper_library/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/jmanley/projects/mkat_fpga/source/xeng_wide/r2_c16a4x512f_hc.slx: hash length incorrect
 ?meta 77777_git	rcs	/mnt/secondary/rhel_root/opt/casper_library/mlib_devel	git_info_found	1
 ?meta 77777_git	rcs	/mnt/secondary/rhel_root/opt/casper_library/mlib_devel	commit_hash	0dd46e42fe8b222502d1519bba33ea867e57cc6b
 ?meta 77777_git	rcs	/mnt/secondary/rhel_root/opt/casper_library/mlib_devel	status	unmodified

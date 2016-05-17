@@ -1255,92 +1255,6 @@
 ?meta 77777	77777	tags	casper:bitsnap,casper:snapshot,casper:spead_pack,xps:bram,xps:sw_reg,xps:tengbe_v2,xps:xsg
 ?meta 77777	77777	system	r2_deng_tvg_rev1_13
 ?meta 77777	77777	builddate	16-May-2016\_16:57:59
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Github/mkat_fpga/source/deng/r2_deng_tvg_rev1_13.slx: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
-Error in sys.excepthook:
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/dist-packages/apport_python_hook.py", line 66, in apport_excepthook
-    from apport.fileutils import likely_packaged, get_recent_crashes
-  File "/usr/lib/python2.7/dist-packages/apport/__init__.py", line 1, in <module>
-    from apport.report import Report
-  File "/usr/lib/python2.7/dist-packages/apport/report.py", line 20, in <module>
-    import apport.fileutils
-  File "/usr/lib/python2.7/dist-packages/apport/fileutils.py", line 22, in <module>
-    from apport.packaging_impl import impl as packaging
-  File "/usr/lib/python2.7/dist-packages/apport/packaging_impl.py", line 20, in <module>
-    import apt
-  File "/usr/lib/python2.7/dist-packages/apt/__init__.py", line 21, in <module>
-    import apt_pkg
-ImportError: /home/andrew/Xilinx/14.7/ISE_DS/ISE/lib/lin64/libstdc++.so.6: version `GLIBCXX_3.4.9' not found (required by /usr/lib/python2.7/dist-packages/apt_pkg.so)
-
-Original exception was:
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Github/mkat_fpga/source/deng/r2_deng_tvg_rev1_13.slx: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Github/mlib_devel: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
-Error in sys.excepthook:
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/dist-packages/apport_python_hook.py", line 66, in apport_excepthook
-    from apport.fileutils import likely_packaged, get_recent_crashes
-  File "/usr/lib/python2.7/dist-packages/apport/__init__.py", line 1, in <module>
-    from apport.report import Report
-  File "/usr/lib/python2.7/dist-packages/apport/report.py", line 20, in <module>
-    import apport.fileutils
-  File "/usr/lib/python2.7/dist-packages/apport/fileutils.py", line 22, in <module>
-    from apport.packaging_impl import impl as packaging
-  File "/usr/lib/python2.7/dist-packages/apport/packaging_impl.py", line 20, in <module>
-    import apt
-  File "/usr/lib/python2.7/dist-packages/apt/__init__.py", line 21, in <module>
-    import apt_pkg
-ImportError: /home/andrew/Xilinx/14.7/ISE_DS/ISE/lib/lin64/libstdc++.so.6: version `GLIBCXX_3.4.9' not found (required by /usr/lib/python2.7/dist-packages/apt_pkg.so)
-
-Original exception was:
-Traceback (most recent call last):
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 134, in <module>
-    lines = _info_to_lines(args.file_dir)
-  File "/home/andrew/Github/mlib_devel/xps_library/get_git_info.py", line 126, in _info_to_lines
-    raise e
-__main__.GitInfoError: /home/andrew/Github/mlib_devel: error running git log:
-	Unknown option: -C
-usage: git [--version] [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p|--paginate|--no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [-c name=value] [--help]
-           <command> [<args>]
-
 ?quit
 ‹Çï9W system.bin ì}Œ$ÇUÀ«kzv{çö¼½w»{½9—çœÓx°Â #$Cj/³áˆŒ4Í8Ærğ(2Aİúœ,F sâ¬1YûGt@DDH>$Ç!óH|¬VşBK}tÏôôtÏtOwuõœßo¯»º«««Ş¼{İUİõºêøx:¡/­×QÛß?|±÷ã„G¶0²“!m/•_Q¡%ößóÕ–5ğö™e7Ø§½óVTò˜ÕB}Z–·Z4,gÚÒB$(—¥â(ê|àÿ                                      L¡{MË  @¬>–4¥¥S  2²ıxÒ”¶N1                      àÇMîFSÑ(ÆB:                                       €ÌàÎ}¦E €E ›`&Õ¿5- ,>UÓpÜÒßn¦è¿ZS ÷=dZ XÆîy®))âY:oZ‚”PÓL² :¤¦˜EõÓ  ğ6™`›_7-A2Êü8Uı¦i	fÃL0ƒÍ×LKŒ2ÏÔ¹ùÓÌ„™`‹r?2Á˜·a•ğYY²aZ€ÙXŞT§Y1bY*óÍZÂT»¦Ä›ê·LK    $fİ´ ÓqK?EzÉˆA‡   €buøœì„Êóü\mš– -Ä[\Ô’KËÛòß+ LÏYÜ|à@ˆCûe ú i	Òâ¢\(ò] F[“{€ÀBô ºß»$ì¢à‘İ%EÚèÒ¯XX&°÷„™%ÄÒ—MK[ş	VQ)ü`ÑÖÇMKwfMÛ*DÊÿHÏïˆê~‡ùr
 …ûš}KtÆâ
