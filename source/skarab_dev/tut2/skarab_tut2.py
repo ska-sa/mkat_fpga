@@ -7,10 +7,118 @@ import os
 from casperfpga import skarab_fpga
 
 
-def print_txsnap(numlines=-1):
+def snapdata2packets(snapdata):
+    """
+    Convert the given snap data to packet dictionaries 
+    :param snapdata: 
+    :return: 
+    """
+    pkts = []
+    pkt_start = 0
+    for ctr in range(len(snapdata['eof'])):
+        if snapdata['eof'][ctr] == 1:
+            pktval = {k: v[pkt_start:ctr+1] for k, v in snapdata.items()}
+            pkts.append(pktval)
+            pkt_start = ctr + 1
+    return pkts
+
+
+def process_tut2_data(packets, printlimit=-1):
+    """
+    Given a dictionary of tut2 data, analyse it for errors
+    :param packets: packets, in the form of individual dictionaries
+    :param printlimit: number of packets to print, -1 means all, 0 means none
+    :return: 
+    """
+    printed = 0
+    errors = {
+        'pkt_count_match': 0, 'pkt_count_progression': 0,
+        'pkt_count_internal': 0, 'ramp_match': 0, 'ramp_progression': 0,
+        'ramp_start': 0, 'walk_match': 0, 'walk_progression': 0,
+        'marker': 0, 'pkt_format': 0,
+    }
+    last_pkt_count = packets[0]['ctr0'][0] - 1
+    last_walk = packets[0]['walking0'][0] / 2
+    if last_walk == 1:
+        last_walk = 2 ** 63
+    for pktctr, pkt in enumerate(packets):
+        this_pkt_cnt = pkt['ctr0'][0]
+        pktlen = len(pkt['eof'])
+        pktstr = '------------------------- pkt_%03i ' \
+                 '------------------------- ' % pktctr
+        if this_pkt_cnt != last_pkt_count + 1:
+            pktstr += 'PKTCNT_ERROR '
+            errors['pkt_count_progression'] += 1
+        if pkt['ramp0'][0] != 1:
+            pktstr += 'RAMP_START_ERROR '
+            errors['ramp_start'] += 1
+        pktstr += '\n'
+        pktstr += '%5s%5s%25s%10s%10s\n' % ('ctr', 'mark', 'walking_one',
+                                            'pkt_ctr', 'ramp')
+        last_ramp = pkt['ramp0'][0] - 1
+        for ctr in range(pktlen):
+            if 'marker' in pkt:
+                marker = pkt['marker'][ctr]
+            else:
+                marker = 7777
+            pktstr += '%5i%5i%25i%10i%10i ' % (
+                ctr, marker, pkt['walking0'][ctr],
+                pkt['ctr0'][ctr], pkt['ramp0'][ctr])
+            # do all the error checks
+            if marker != 7777:
+                pktstr += 'MARKER_ERROR '
+                errors['marker'] += 1
+            if pkt['walking0'][ctr] != last_walk * 2:
+                if (pkt['walking0'][ctr] == 2) and (last_walk == 2 ** 63):
+                    pass
+                else:
+                    pktstr += 'WALK_ERROR '
+                    errors['walk_progression'] += 1
+            last_walk = pkt['walking0'][ctr]
+            if pkt['ramp0'][ctr] != last_ramp + 1:
+                if (pkt['ramp0'][ctr] == 1) and (last_ramp == pktlen):
+                    pass
+                else:
+                    pktstr += 'RAMP_ERROR '
+                    errors['ramp_progression'] += 1
+            last_ramp = pkt['ramp0'][ctr]
+            if ctr == pktlen-1:
+                if pkt['eof'][ctr] != 1:
+                    pktstr += 'EOF_ERROR '
+            if pkt['ctr0'][ctr] != this_pkt_cnt:
+                pktstr += 'PKTCNT_INT_ERROR '
+                errors['pkt_count_internal'] += 1
+            if 'ctr1' in pkt:
+                if pkt['ctr0'][ctr] != pkt['ctr1'][ctr]:
+                    pktstr += 'PKTCNT_MATCH_ERROR '
+                    errors['pkt_count_match'] += 1
+            if 'ramp1' in pkt:
+                if pkt['ramp0'][ctr] != pkt['ramp1'][ctr]:
+                    pktstr += 'RAMP_MATCH_ERROR '
+                    errors['ramp_match'] += 1
+            if 'walking1' in pkt:
+                walk0 = pkt['walking0'][ctr] & (2 ** 48 - 1)
+                walk1 = pkt['walking1'][ctr] & (2 ** 48 - 1)
+                if walk0 != walk1:
+                    pktstr += 'WALK_MATCH_ERROR '
+                    errors['walk_match'] += 1
+            if pkt['eof'][ctr] == 1:
+                pktstr += 'EOF '
+            if (printlimit == -1) or (printed < printlimit):
+                print(pktstr)
+                pktstr = ''
+        printed += 1
+        last_pkt_count = this_pkt_cnt
+    print('-------------------------\nERRORS:')
+    for key, val in errors.items():
+        print('\t%s: %i' % (key, val))
+    return errors
+
+
+def print_txsnap(packets_to_print=-1):
     """
     
-    :param numlines: 
+    :param packets_to_print: 
     :return: 
     """
     ftx.registers.control.write(snap_arm=0)
@@ -20,22 +128,14 @@ def print_txsnap(numlines=-1):
     d = ftx.snapshots.txsnap0_ss.read(arm=False)['data']
     d1 = ftx.snapshots.txsnap1_ss.read(arm=False)['data']
     d.update(d1)
-    if numlines < 1:
-        numlines = len(d['eof'])
-    for ctr in range(numlines):
-        print '%04i' % ctr, 'pkt_ctr(%015i)' % d['pkt_ctr'][ctr], \
-            'ramp(%05i)' % d['ramp'][ctr], \
-            'walking(%s)' % format(d['walking'][ctr], '#066b'),
-        if d['eof'][ctr] == 1:
-            print 'EOF'
-        else:
-            print ''
+    pkts = snapdata2packets(d)
+    errors = process_tut2_data(pkts, printlimit=packets_to_print)
 
 
-def print_rxsnap(numlines=-1):
+def print_rxsnap(packets_to_print=-1):
     """
     
-    :param numlines: 
+    :param packets_to_print: 
     :return: 
     """
     frx.registers.control.write(snap_arm=0)
@@ -49,38 +149,9 @@ def print_rxsnap(numlines=-1):
     d2 = frx.snapshots.d2_ss.read(arm=False)['data']
     d0.update(d1)
     d0.update(d2)
-    ip = d0['src_ip'][0]
-    port = d0['src_port'][0]
-    if numlines < 1:
-        numlines = len(d0['src_ip'])
-    for ctr in range(numlines):
-        print '%04i' % ctr,
-        print 'pkt_ctr(%015i)' % d0['ctr0'][ctr],
-        print 'valid(%1i)' % d0['valid_raw'][ctr],
-        print 'ramp(%05i)' % d0['ramp0'][ctr],
-        print 'walk(%s)' % format(d0['walking0'][ctr], '#066b'),
-        if d0['ctr0'][ctr] != d0['ctr1'][ctr]:
-            print 'PKTCTR_ERROR',
-        if d0['ramp0'][ctr] != d0['ramp1'][ctr]:
-            print 'RAMP_ERROR',
-        if d0['walking0'][ctr] != d0['walking1'][ctr]:
-            print 'WALK_ERROR',
-        if d0['overrun'][ctr] != 0:
-            print 'OVERRUN',
-        if d0['badframe'][ctr] != 0:
-            print 'BADFRAME',
-        if d0['src_ip'][ctr] != ip:
-            print 'IP_ERROR',
-        if d0['src_port'][ctr] != port:
-            print 'PORT_ERROR',
-        if ctr == 0:
-            last_pkt = d0['ctr0'][0]
-            last_ramp = -1
-            last_walk = d0['walking0'][1] / 2
-        if d0['eof'][ctr] == 1:
-            print 'EOF'
-        else:
-            print ''
+    pkts = snapdata2packets(d0)
+    errors = process_tut2_data(pkts, printlimit=packets_to_print)
+
 
 if __name__ == '__main__':
 
@@ -118,6 +189,8 @@ if __name__ == '__main__':
                         default=-1, help='Decimate the datarate by this much.')
     parser.add_argument('-p', '--program', dest='program', action='store_true',
                         default=False, help='Program the SKARABs')
+    parser.add_argument('-i', '--ipython', dest='ipython', action='store_true',
+                        default=False, help='Start IPython at script end.')
     parser.add_argument('--loglevel', dest='log_level', action='store',
                         default='INFO', help='log level to use, default None, '
                                              'options INFO, DEBUG, ERROR')
@@ -161,7 +234,7 @@ if __name__ == '__main__':
         ftx.registers.control.write(tx_en=0, pkt_rst='pulse')
         frx.registers.control.write(snap_arm=0)
 
-    to_pc = True
+    to_pc = False
 
     # set up TX
     ip_dest = frx.gbes[0].get_ip()
@@ -207,13 +280,14 @@ if __name__ == '__main__':
                  % frx.registers.rx_overrun.read()['data']['reg'])
 
     if not tx_comms_lost:
-        print_txsnap(int(args.pktsize * 2.5))
+        print_txsnap(2)
         print ''
 
     if not to_pc:
-        print_rxsnap(int(args.pktsize * 2.5))
+        print_rxsnap(2)
 
-    import IPython
-    IPython.embed()
+    if args.ipython:
+        import IPython
+        IPython.embed()
 
 # end

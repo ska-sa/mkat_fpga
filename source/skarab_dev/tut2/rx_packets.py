@@ -9,6 +9,8 @@ import struct
 import socket
 import argparse
 
+import skarab_tut2
+
 
 def unpack_word256(word):
     """
@@ -59,78 +61,30 @@ finally:
     sock.close()
 
 # analyse the data we have received
-last_pkt_count = None
-last_ramp = 0
-last_walk = None
-pkt_ctr = 0
-errors = {
-    'pkt_count_match': 0,
-    'pkt_count_progression': 0,
-    'pkt_count_internal': 0,
-    'ramp_match': 0,
-    'ramp_progression': 0,
-    'walk_match': 0,
-    'walk_progression': 0,
-    'marker': 0,
-    'pkt_format': 0,
-}
+fpkts = []
 for pkt in pkts:
     d = struct.unpack('>%iH' % (len(pkt[0]) / 2), pkt[0])
-    this_pkt_cnt = (d[0] << 16) | (d[1] << 0)
-    pktstr = '------------------------- pkt_%03i ' \
-             '------------------------- ' % pkt_ctr
-    if last_pkt_count is None:
-        last_pkt_count = this_pkt_cnt - 1
-    if this_pkt_cnt != last_pkt_count + 1:
-        pktstr += 'PKTCNT_ERROR\n'
-        errors['pkt_count_progression'] += 1
-    else:
-        pktstr += '\n'
-    pkt_count_l = -1
+    pkt_dict = {'marker': [], 'walking0': [], 'walking1': [],
+                'ctr0': [], 'ctr1': [], 'ramp0': [], 'ramp1': [],
+                'eof': [], 'valid_raw': []}
     for ctr in range(0, len(d), 16):
         try:
             marker, walking_m, walking_l, pkt_count_m, pkt_count_l, \
                 ramp_m, ramp_l = unpack_word256(d[ctr:ctr+16])
-            if last_walk is None:
-                last_walk = walking_l / 2
-            pktstr += '%4i%25i%10i%10i ' % (marker, walking_l,
-                                            pkt_count_l, ramp_l)
-            # check for errors
-            if marker != 7777:
-                pktstr += 'MARKER_ERROR '
-                errors['marker'] += 1
-            if (walking_l & (2**48-1)) != walking_m:
-                errors['walk_match'] += 1
-                pktstr += 'WALKING_MATCH_ERROR '
-            if pkt_count_m != pkt_count_l:
-                errors['pkt_count_match'] += 1
-                pktstr += 'PKTCNT_MATCH_ERROR '
-            if ramp_m != ramp_l:
-                errors['ramp_match'] += 1
-                pktstr += 'RAMP_MATCH_ERROR '
-            if walking_l != last_walk * 2:
-                if not ((walking_l == 2) and (last_walk == 2**63)):
-                    errors['walk_progression'] += 1
-                    pktstr += 'WALKING_ERROR '
-            if ramp_l != last_ramp + 1:
-                errors['ramp_progression'] += 1
-                pktstr += 'RAMP_ERROR '
-            if pkt_count_l != this_pkt_cnt:
-                errors['pkt_count_internal'] += 1
-                pktstr += 'PKTCNT_ERR2 '
-            last_walk = walking_l
-            last_ramp = ramp_l
+            pkt_dict['marker'].append(marker)
+            pkt_dict['walking0'].append(walking_l)
+            pkt_dict['walking1'].append(walking_m)
+            pkt_dict['ctr0'].append(pkt_count_l)
+            pkt_dict['ctr1'].append(pkt_count_m)
+            pkt_dict['ramp0'].append(ramp_l)
+            pkt_dict['ramp1'].append(ramp_m)
         except IndexError:
             errors['pkt_format'] += 1
-        if not args.quiet:
-            print(pktstr)
-        pktstr = ''
-    last_pkt_count = pkt_count_l
-    last_ramp = 0
-    pkt_ctr += 1
+    pkt_dict['eof'] = [0] * len(pkt_dict['marker'])
+    pkt_dict['eof'][-1] = 1
+    pkt_dict['valid_raw'] = [15] * len(pkt_dict['marker'])
+    fpkts.append(pkt_dict)
 
-print('-------------------------\nERRORS:')
-for key, val in errors.items():
-    print('\t%s: %i' % (key, val))
+skarab_tut2.process_tut2_data(fpkts, -1 if not args.quiet else 0)
 
 # end
