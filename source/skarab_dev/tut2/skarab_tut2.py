@@ -115,6 +115,61 @@ def process_tut2_data(packets, printlimit=-1):
     return errors
 
 
+def read_rx_regs():
+    """
+    Read all the debug registers on the RX FPGA
+    :return: 
+    """
+    return {
+        'err_walk': frx.registers.err_walk.read()['data']['reg'],
+        'err_ramp': frx.registers.err_ramp.read()['data']['reg'],
+        'err_pktctr': frx.registers.err_pkt_ctr.read()['data']['reg'],
+        'err_marker': frx.registers.err_marker.read()['data']['reg'],
+        'err_valid_raw': frx.registers.err_valid_raw.read()['data']['reg'],
+        'err_pktctr_step': frx.registers.err_pkt_ctr_step.read()['data']['reg'],
+        'rx_badframe': frx.registers.rx_badframe.read()['data']['reg'],
+        'rx_overrun': frx.registers.rx_overrun.read()['data']['reg'],
+        'rx_valid': frx.registers.rx_valid.read()['data']['reg'],
+        'rx_eof': frx.registers.rx_eof.read()['data']['reg'],
+    }
+
+
+def check_rx_pkt_counters():
+    """
+    Read the snapshot on the RX boards that collects packet counters. Check
+    that they increase monotonically.
+    :return: the numbers of errors
+    """
+    d = frx.snapshots.pkt_ctrs_ss.read()['data']
+    last_ctr = d['pkt_ctr'][0] - 1
+    errors = 0
+    for ctr in d['pkt_ctr']:
+        if ctr != last_ctr + 1:
+            errors += 1
+        last_ctr = ctr
+    print '%i errors in %i packets (%i->%i).' % (
+        errors, len(d['pkt_ctr']), d['pkt_ctr'][0], d['pkt_ctr'][-1])
+    return errors
+
+
+def check_rx_pkt_counters2():
+    """
+    Read the snapshot on the RX boards that collects packet counters. Check
+    that they increase monotonically.
+    :return: the numbers of errors
+    """
+    d = frx.snapshots.pkt_ctrs_compare_ss.read()['data']
+    errors = 0
+    for ctr in range(len(d['pkt_ctr'])):
+        now = d['pkt_ctr'][ctr]
+        old = d['pkt_ctr_old'][ctr]
+        if now != old + 1:
+            errors += 1
+    print '%i errors in %i packets (%i->%i).' % (
+        errors, len(d['pkt_ctr']), d['pkt_ctr'][0], d['pkt_ctr'][-1])
+    return errors
+
+
 def print_txsnap(packets_to_print=-1):
     """
     
@@ -243,7 +298,7 @@ if __name__ == '__main__':
         ip_dest = tengbe.IpAddress('10.99.1.1')
     logging.info('Setting TX destination to %s.' % ip_dest)
     ftx.registers.tx_ip = int(ip_dest)
-    ftx.registers.tx_port = 7779
+    ftx.registers.tx_port = 8765
     ftx.registers.control.write(pkt_len=args.pktsize)
     clk_ghz = ftx.registers.clk_mhz.read()['data']['reg'] / 1000.0
     if args.decimate > -1:
@@ -257,7 +312,7 @@ if __name__ == '__main__':
 
     # set up RX
     logging.info('Setting RX port.')
-    frx.gbes[0].set_port(7779)
+    frx.gbes[0].set_port(8765)
     frx.registers.control.write(gbe_rst='pulse')
 
     # enable tx
