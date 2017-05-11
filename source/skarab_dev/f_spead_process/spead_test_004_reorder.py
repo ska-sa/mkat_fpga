@@ -23,7 +23,7 @@ from corr2 import utils
 
 logging.basicConfig(level=logging.INFO)
 
-FPG = '/home/paulp/bofs/spead_test_reorder_2017-5-10_1556.fpg'
+FPG = '/home/paulp/bofs/spead_test_reorder_2017-5-11_1435.fpg'
 
 if os.environ['CORR2UUT'].strip() == '':
     print 'CORR2UUT environment variables not found.'
@@ -142,14 +142,29 @@ def read_reosnap_time():
 def read_reosnap_unpack():
     d = f.snapshots.unpacksnap_ss.read(man_trig=True)['data']
     overflows = 0
+    ramp_errs = 0
+    last_val = ((d['d80_2'][0] << 48) + (d['d80_1'][0] << 16) +
+                d['d80_0'][0]) - 1
+    vals = []
     for ctr in range(len(d['dv'])):
         print '%5i' % ctr,
         for k in d.keys():
             print '%s(%i)' % (k, d[k][ctr]),
+        d80 = (d['d80_2'][ctr] << 48) + (d['d80_1'][ctr] << 16) + d['d80_0'][ctr]
+        print 'd80(%i)' % d80,
         if d['overflow'][ctr]:
+            print 'OVERFLOW',
             overflows += 1
+        if d80 != last_val + 1:
+            print 'RAMP_ERR',
+            ramp_errs += 1
+        if d80 in vals:
+            raise RuntimeError
+        vals.append(d80)
         print ''
+        last_val = d80
     print 'Overflows:', overflows
+    print 'Ramp errors:', ramp_errs
 
 
 def read_reosnap_write():
@@ -186,19 +201,36 @@ def read_reosnap_write_inner(man_valid=True):
 
 
 def print_status_regs():
+    # gbe
+    print 'rx_badframe_count:', f.registers.rx_badframe_count.read()['data']
+    print 'rx_overrun_count:', f.registers.rx_overrun_count.read()['data']
+    print 'rx_valid_ctr:', f.registers.rx_valid_ctr.read()['data']
+    print 'rx_eof_ctr:', f.registers.rx_eof_ctr.read()['data']
+    # pad
+    print 'barrel_dv_ctr:', f.registers.barrel_dv_ctr.read()['data']
+    print 'barrel_eof_ctr:', f.registers.barrel_eof_ctr.read()['data']
+    print 'barrel_hdrfix:', f.registers.barrel_hdrfix.read()['data']
+    # spead
     print 'spead_pkt_cnt:', f.registers.spead_pkt_cnt.read()['data']
-    for ctr in range(5):
-        print 'spead_err_time%i:' % ctr, \
-            f.registers['spead_err_time%i' % ctr].read()['data']
     print 'spead_err_magic:', f.registers.spead_err_magic.read()['data']
     print 'spead_err_hdr:', f.registers.spead_err_hdr.read()['data']
     print 'spead_err_pad:', f.registers.spead_err_pad.read()['data']
     print 'spead_err_len:', f.registers.spead_err_len.read()['data']
-    print 'reo_pkt_cnt:', f.registers.reo_pkt_cnt.read()['data']
-    for ctr in range(3):
-        print 'reo_err%i:' % ctr, f.registers['reo_err%i' % ctr].read()['data']
+    for ctr in range(5):
+        print 'spead_err_time%i:' % ctr, \
+            f.registers['spead_err_time%i' % ctr].read()['data']
+    # reo
     print 'reo_err_disc:', f.registers.reo_err_disc.read()['data']
     print 'reo_err_relock:', f.registers.reo_err_relock.read()['data']
+    print 'reo_pkt_cnt:', f.registers.reo_pkt_cnt.read()['data']
+    for ctr in range(3):
+        print 'reo_err%i:' % ctr, f.registers['reo_err%i' % ctr].read()[
+            'data']
+    # unpack
+    print 'unpack_of_cnt:', f.registers.unpack_of_cnt.read()['data']
+    print 'unpack_ramp_err:', f.registers.unpack_ramp_err.read()['data']
+    print 'unpack_pol0_err:', f.registers.unpack_pol0_err.read()['data']
+    print 'unpack_pol1_err:', f.registers.unpack_pol1_err.read()['data']
 
 
 def read_reorder_snaps(man_valid=False):
@@ -283,22 +315,19 @@ def snap_to_mat():
             d32_0[idx + 1].append(rawdata['p0_d%i' % ctr2][ctr] >> 32)
             d32_1[idx].append(rawdata['p1_d%i' % ctr2][ctr] & (2 ** 32 - 1))
             d32_1[idx + 1].append(rawdata['p1_d%i' % ctr2][ctr] >> 32)
-    for ctr in range(8):
-        d32_0[ctr] = ([0] * 100) + d32_0[ctr]
-        d32_1[ctr] = ([0] * 100) + d32_1[ctr]
-
     rawdata['recv'] = ([0] * 100) + rawdata['recv']
     rawdata['dv'] = ([0] * 100) + rawdata['dv']
     rawdata['timestamp'] = ([0] * 100) + rawdata['timestamp']
     rawdata['sync'] = ([0] * 100) + rawdata['sync']
-    datadict = {
-        'simin_p0_d%i' % ctr: {
+    datadict = {}
+    for ctr in range(8):
+        d32_0[ctr] = ([0] * 100) + d32_0[ctr]
+        d32_1[ctr] = ([0] * 100) + d32_1[ctr]
+        datadict['simin_p0_d%i' % ctr] = {
             'time': [], 'signals': {
                 'dimensions': 1, 'values': np.array(d32_0[ctr], dtype=np.uint32)
             }
-        } for ctr in range(8)
-    }
-    for ctr in range(8):
+        }
         datadict['simin_p1_d%i' % ctr] = {
             'time': [], 'signals': {
                 'dimensions': 1, 'values': np.array(d32_1[ctr], dtype=np.uint32)
@@ -319,7 +348,7 @@ def snap_to_mat():
         datadict[matvar]['signals']['values'].shape = (len(rawdata[key]), 1)
     sio.savemat('/tmp/spead.mat', datadict)
 
-print_reorder_snaps()
+# print_reorder_snaps()
 IPython.embed()
 
 # end
