@@ -17,8 +17,11 @@ import time
 
 from casperfpga import skarab_fpga
 
-FPG = '/home/paulp/bofs/ct_2017-5-22_1059.fpg'
-FPG = '/home/paulp/bofs/ct_rom_2017-5-25_1111.fpg'
+# FPG = '/home/paulp/bofs/ct_2017-5-26_1027.fpg'  # new ELF from the repo - 1.2s slow
+# FPG = '/home/paulp/bofs/ct_2017-5-26_1202.fpg'  # old ELF from tyrone - 0.3s fast
+# FPG = '/home/paulp/bofs/ct_2017-5-26_1612.fpg'  # latest ELF in the repo, on Wes's suggestion
+FPG = '/home/paulp/bofs/ct_2017-5-29_1553.fpg'
+# FPG = '/home/paulp/bofs/ct_rom_2017-5-25_1111.fpg'
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,6 +48,9 @@ def reset_dv_system(cycle=0):
     :param cycle: 
     :return: 
     """
+    # set up the CT
+    f.registers.ct_control.write(trigpos=128, gapsize=45)
+    # and reset the system
     f.registers.control.write(enable=False)
     f.registers.control.write(dv_cycle=cycle)
     f.registers.control.write(sync='pulse')
@@ -64,6 +70,7 @@ def print_status_regs():
     print 'control:', f.registers.control.read()['data']
     print 'hmc_status:', f.registers.hmc_status.read()['data']
     print 'hmcerr_oobuff:', f.registers.hmcerr_oobuff.read()['data']
+    print 'ct_addr_err:', f.registers.ct_addr_err.read()['data']
 
 
 def read_data_in_snap(man_valid=False, printlen=-1):
@@ -118,7 +125,10 @@ def translate_addr(addr, shift_size=9):
     vault_to_shift = (addr >> 2) & 3
     middle = (addr >> 4) & ((2 ** shift_size) - 1)
     upper = addr >> (4 + shift_size)
-    rv = (upper << 4 + shift_size + 2) + (vault_to_shift << shift_size + 2) + (middle << 2) + low_vaults
+    # rv = (upper << 4 + shift_size + 2) + (vault_to_shift << shift_size + 2) + (middle << 2) + low_vaults
+
+    rv = (upper << 4 + shift_size) + (vault_to_shift << shift_size + 2) + (middle << 2) + low_vaults
+
     rv_dram = rv >> 8
     rv_bank = (rv >> 4) & 15
     rv_vault = rv & 15
@@ -360,11 +370,35 @@ def check_mapped_output():
         return
     d = f.snapshots['output_ss'].read(man_trig=True,
                                       man_valid=False)['data']
-    prevf0 = d['f0'][0]
-    for ctr in range(len(d['f0'])):
-        if prevf0 != d['f0'][ctr]:
-            print ctr, prevf0, d['f0'][ctr]
-        prevf0 = d['f0'][ctr]
+    prev_f0 = d['d0_1'][0]
+    prev_ctr = 0
+    step_errors = 0
+    ct_len_errors = 0
+    tag_errors = 0
+    last_tag = -8
+    for ctr in range(len(d['d0_1'])):
+        new_f0 = d['d0_1'][ctr]
+        if prev_f0 != new_f0:
+            if new_f0 % 8 == 6:
+                last_tag = d['d0_0'][ctr] - 8
+            ct_len = ctr - prev_ctr
+            print '%5i' % ctr, '%5i' % prev_f0, '%5i' % new_f0, '%5i' % ct_len,
+            if (new_f0 != prev_f0 + 1) and (new_f0 != 0 and prev_f0 != 1023):
+                step_errors += 1
+                print 'STEP_ERROR',
+            if ct_len != 32:
+                ct_len_errors += 1
+                print 'LEN_ERROR',
+            prev_ctr = ctr
+            print ''
+        if new_f0 % 8 == 6:
+            this_tag = d['d0_0'][ctr]
+            if this_tag != last_tag + 8:
+                print '%5i' % ctr, '%5i' % last_tag, '%5i' % this_tag, 'TAG_ERROR'
+                tag_errors += 1
+            last_tag = this_tag
+        prev_f0 = d['d0_1'][ctr]
+    print step_errors, ct_len_errors, tag_errors
 
 
 def check_output_data():
@@ -400,7 +434,42 @@ def check_output_data():
         if dif not in diffs:
             diffs.append(dif)
         prevf0 = newf0
-    print '%i errors in %i total' % (errors, len(d['f0']))
+    print '%i errors in %i total' % (errors, len(d['f0'])), time.time()
+    return errors
+
+
+def check_output_data_mapped():
+    """
+    Check that the data in the output buffer makes sense.
+    :return: 
+    """
+    if 'output_ss' not in f.snapshots.names():
+        print 'output_ss not found, returning'
+        return
+    d = f.snapshots['output_ss'].read(man_trig=True,
+                                      man_valid=False)['data']
+    last_f0 = d['f0'][0]
+    start_idx = -1
+    errors = 0
+    error_indices = []
+    for ctr in range(len(d['f0'])):
+        current_f0 = d['f0'][ctr]
+        if current_f0 != last_f0:
+            pkt_len = ctr - start_idx
+            if (pkt_len != 256) and (start_idx != -1):
+                print '%i - F0_ERROR_1(%i, %i, %i)' % (
+                    ctr, last_f0, d['f0'][ctr], pkt_len)
+                errors += 1
+                error_indices.append(ctr)
+            if (current_f0 != last_f0 + 8) and \
+                    ((current_f0 != 0) and (last_f0 != 1016)):
+                print '%i - F0_ERROR_2(%i, %i, %i)' % (
+                    ctr, last_f0, d['f0'][ctr], pkt_len)
+                errors += 1
+                error_indices.append(ctr)
+            start_idx = ctr
+            last_f0 = current_f0
+    print '%i errors in %i total' % (errors, len(d['f0'])), time.time()
     return errors
 
 
