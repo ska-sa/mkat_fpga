@@ -20,7 +20,8 @@ from casperfpga import skarab_fpga
 # FPG = '/home/paulp/bofs/ct_2017-5-26_1027.fpg'  # new ELF from the repo - 1.2s slow
 # FPG = '/home/paulp/bofs/ct_2017-5-26_1202.fpg'  # old ELF from tyrone - 0.3s fast
 # FPG = '/home/paulp/bofs/ct_2017-5-26_1612.fpg'  # latest ELF in the repo, on Wes's suggestion
-FPG = '/home/paulp/bofs/ct_2017-5-29_1553.fpg'
+# FPG = '/home/paulp/bofs/ct_2017-6-1_0910.fpg'  # this one exhibits BROKEN data from the HMC!!!
+FPG = '/home/paulp/bofs/ct_2017-6-5_0742.fpg'
 # FPG = '/home/paulp/bofs/ct_rom_2017-5-25_1111.fpg'
 
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +43,16 @@ if f.gbes[0].get_port() != 30000:
     f.gbes[0].set_port(30000)
 
 
+def setup_num_xengines(num_x):
+    """
+    
+    :param num_x: 
+    :return: 
+    """
+    f.registers.control_ct1.write(num_x=num_x, num_x_recip=1.0 / num_x,
+                                  chans_per_x=(2**INPUT_BITS / 8) / num_x)
+
+
 def reset_dv_system(cycle=0):
     """
     Set up the test model to run data through the HMC block.
@@ -49,7 +60,9 @@ def reset_dv_system(cycle=0):
     :return: 
     """
     # set up the CT
-    f.registers.ct_control.write(trigpos=128, gapsize=45)
+    if f.registers.control_ct1.read()['data']['num_x'] == 0:
+        setup_num_xengines(8)
+    f.registers.control_ct0.write(trigpos=128, gapsize=45)
     # and reset the system
     f.registers.control.write(enable=False)
     f.registers.control.write(dv_cycle=cycle)
@@ -63,14 +76,11 @@ def print_status_regs():
     
     :return: 
     """
-    print 'hmcerr_rdrdy:', f.registers.hmcerr_rdrdy.read()['data']
-    print 'hmcerr_ootags:', f.registers.hmcerr_ootags.read()['data']
-    print 'hmcerr_wrrdy:', f.registers.hmcerr_wrrdy.read()['data']
-    print 'hmc_wr_ctr:', f.registers.hmc_wr_ctr.read()['data']
-    print 'control:', f.registers.control.read()['data']
-    print 'hmc_status:', f.registers.hmc_status.read()['data']
-    print 'hmcerr_oobuff:', f.registers.hmcerr_oobuff.read()['data']
-    print 'ct_addr_err:', f.registers.ct_addr_err.read()['data']
+    print 'status_ct:', f.registers.status_ct.read()['data']
+    print 'status_ct_rdy_err:', f.registers.status_ct_rdy_err.read()['data']
+    print 'status_ct_err:', f.registers.status_ct_err.read()['data']
+    print 'status_ct_err_tvg_data:', f.registers.status_ct_err_tvg_data.read()['data']
+    # print 'hmcerr_oobuff:', f.registers.hmcerr_oobuff.read()['data']
 
 
 def read_data_in_snap(man_valid=False, printlen=-1):
@@ -382,7 +392,7 @@ def check_mapped_output():
             if new_f0 % 8 == 6:
                 last_tag = d['d0_0'][ctr] - 8
             ct_len = ctr - prev_ctr
-            print '%5i' % ctr, '%5i' % prev_f0, '%5i' % new_f0, '%5i' % ct_len,
+            print '%5i' % ctr, '%5i' % prev_f0, '%5i' % new_f0, '%5i' % ct_len, int(new_f0 / 64),
             if (new_f0 != prev_f0 + 1) and (new_f0 != 0 and prev_f0 != 1023):
                 step_errors += 1
                 print 'STEP_ERROR',
@@ -393,12 +403,13 @@ def check_mapped_output():
             print ''
         if new_f0 % 8 == 6:
             this_tag = d['d0_0'][ctr]
-            if this_tag != last_tag + 8:
+            if (this_tag != last_tag + 8) and (ctr > 0):
                 print '%5i' % ctr, '%5i' % last_tag, '%5i' % this_tag, 'TAG_ERROR'
                 tag_errors += 1
             last_tag = this_tag
         prev_f0 = d['d0_1'][ctr]
     print step_errors, ct_len_errors, tag_errors
+    return step_errors + (ct_len_errors>1) + tag_errors
 
 
 def check_output_data():
@@ -473,8 +484,47 @@ def check_output_data_mapped():
     return errors
 
 
-def read_hmc_wrrd_snap(printlen=-1):
-    _gen_read_snap('hmc_wrrd_ss', printlen, True)
+def read_hmc_readwrite_snap(printlen=-1, only_rd_en=False, only_wr_en=False):
+    snapname = 'hmc_readwrite_ss'
+    if snapname not in f.snapshots.names():
+        print '%s not found, returning' % snapname
+        return
+    d = f.snapshots[snapname].read(man_trig=True, man_valid=True)['data']
+    printlen = printlen if printlen > -1 else len(d[d.keys()[0]])
+    for ctr in range(printlen):
+        if only_rd_en and (not d['rd_en'][ctr]):
+            continue
+        if only_wr_en and (not d['wr_en'][ctr]):
+            continue
+        print '%5i' % ctr,
+        # misc
+        wr_rdy = d['wr_rdy'][ctr]
+        rd_rdy = d['rd_rdy'][ctr]
+        print 'wr_rdy(%i)' % wr_rdy,
+        print 'rd_rdy(%i)' % rd_rdy,
+        # write
+        print '   ||||   ',
+        print 'wr_en(%i)' % d['wr_en'][ctr],
+        print 'wr_addr(%6i)' % d['wr_addr'][ctr],
+        for ctr2 in range(6):
+            print 'd%i(%4i)' % (ctr2, d['d%i' % ctr2][ctr]),
+        # read
+        print '   ||||   ',
+        print 'rd_en(%i)' % d['rd_en'][ctr],
+        print 'rd_addr(%6i)' % d['rd_addr'][ctr],
+        print 'tag(%3i)' % d['tag'][ctr],
+        # errors
+        print '   ||||   ',
+        if (wr_rdy == 0) or (rd_rdy == 0):
+            print 'RDY_ERROR(%i,%i)' % (wr_rdy, rd_rdy),
+        val_error = (d['d1'][ctr] != d['d0'][ctr] + 1) or \
+            (d['d2'][ctr] != d['d1'][ctr] + 1) or \
+            (d['d3'][ctr] != d['d2'][ctr] + 1) or \
+            (d['d4'][ctr] != d['d3'][ctr] + 1) or \
+            (d['d5'][ctr] != d['d4'][ctr] + 1)
+        if val_error and (d['wr_en'][ctr] == 1):
+            print 'VAL_ERROR',
+        print ''
 
 
 def read_waddrs_snap(printlen=-1):
@@ -488,11 +538,68 @@ def read_waddrs_snap(printlen=-1):
 
 
 def read_output_snap(printlen=-1, man_valid=False, man_trig=True):
-    _gen_read_snap('output_ss', printlen, man_valid, man_trig)
+    snapname = 'output_ss'
+    if snapname not in f.snapshots.names():
+        print '%s not found, returning' % snapname
+        return
+    d = f.snapshots[snapname].read(man_trig=man_trig,
+                                   man_valid=man_valid)['data']
+    printlen = printlen if printlen > -1 else len(d[d.keys()[0]])
+    data_errors = 0
+    for ctr in range(printlen):
+        print '%5i' % ctr,
+        print 'trig(%i)' % d['trig'][ctr],
+        print 'dv(%i)' % d['dv'][ctr],
+        print 'pkt_start(%i)' % d['pkt_start'][ctr],
+        print 'd0_0(%4i)' % d['d0_0'][ctr],
+        print 'd0_1(%4i)' % d['d0_1'][ctr],
+        print 'd1_0(%4i)' % d['d1_0'][ctr],
+        print 'd1_1(%4i)' % d['d1_1'][ctr],
+        print 'd7_0(%4i)' % d['d7_0'][ctr],
+        print 'd7_1(%4i)' % d['d7_1'][ctr],
+        if (d['d0_1'][ctr] != d['d7_1'][ctr]) or \
+                (d['d0_1'][ctr] != d['d1_1'][ctr]):
+            print 'DATA_ERROR',
+            data_errors += 1
+        print ''
+    print data_errors
 
 
-def read_hmcout_snap(printlen=-1, man_valid=False, man_trig=True):
-    _gen_read_snap('hmcout_ss', printlen, man_valid, man_trig)
+def read_hmcout_snap(printlen=-1, man_valid=False, man_trig=True,
+                     no_trig=False):
+    snapname = 'hmcout_ss'
+    if snapname not in f.snapshots.names():
+        print '%s not found, returning' % snapname
+        return
+    if no_trig:
+        d = f.snapshots[snapname].read(arm=False)['data']
+    else:
+        d = f.snapshots[snapname].read(man_trig=man_trig,
+                                       man_valid=man_valid)['data']
+    printlen = printlen if printlen > -1 else len(d[d.keys()[0]])
+    for ctr in range(printlen):
+        print '%5i' % ctr,
+        print 'dv(%i)' % d['dv'][ctr],
+        print 'sync(%i)' % d['sync'][ctr],
+        print 'rd_rdy(%i)' % d['rd_rdy'][ctr],
+        print 'wr_rdy(%i)' % d['wr_rdy'][ctr],
+        print 'tag(%3i)' % d['tag'][ctr],
+        for ctr2 in range(8):
+            print 'f%i(%4i)' % (ctr2, d['f%i' % ctr2][ctr]),
+        for ctr2 in range(3):
+            print 'p1_f%i(%4i)' % (ctr2, d['p1_f%i' % ctr2][ctr]),
+        val_error = (d['f1'][ctr] != d['f0'][ctr] + 1) or \
+            (d['f2'][ctr] != d['f1'][ctr] + 1) or \
+            (d['f3'][ctr] != d['f2'][ctr] + 1) or \
+            (d['f4'][ctr] != d['f3'][ctr] + 1) or \
+            (d['f5'][ctr] != d['f4'][ctr] + 1) or \
+            (d['f6'][ctr] != d['f5'][ctr] + 1) or \
+            (d['f7'][ctr] != d['f6'][ctr] + 1) or \
+            (d['p1_f1'][ctr] != d['p1_f0'][ctr] + 1) or \
+            (d['p1_f2'][ctr] != d['p1_f1'][ctr] + 1)
+        if val_error and (d['dv'][ctr] == 1):
+            print 'VAL_ERROR',
+        print ''
 
 
 def read_wraddr_conv_snap(printlen=-1, man_valid=False):
