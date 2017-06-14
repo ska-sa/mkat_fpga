@@ -10,8 +10,7 @@ import struct
 
 from casperfpga import skarab_fpga
 
-FPG = 'sbram_test_2017-5-17_1628.fpg'
-FPG = '/home/paulp/bofs/sbram_wtf_2017-5-17_1628.fpg'
+FPG = '/home/paulp/bofs/sbram_test_2017-6-9_1050.fpg'
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,14 +21,14 @@ if os.environ['CORR2UUT'].strip() == '':
 f = skarab_fpga.SkarabFpga(os.environ['CORR2UUT'])
 f.get_system_information(FPG)
 
-if f.gbes[0].get_port() != 30000:
-    f.gbes[0].set_port(30000)
+if f.gbes.forty_gbe.get_port() != 30000:
+    f.gbes.forty_gbe.set_port(30000)
 
 LEN = 16384
 
-addr_map = range(LEN-1, -1, -1)
+addr_map_reverse = range(LEN-1, -1, -1)
 addr_map_zeros = [0] * LEN
-addr_map_same = range(LEN)
+addr_map_forwards = range(LEN)
 
 
 def write_sbram(vector):
@@ -39,6 +38,8 @@ def write_sbram(vector):
     :param vector: 
     :return: 
     """
+    # logging.info('Writing the shared BRAM via bulkwrite')
+    logging.info('Writing the shared BRAM')
     numwords = 0
     for ctr, vword in enumerate(vector):
         ss = struct.pack('>I', vword)
@@ -54,6 +55,7 @@ def write_others(vector):
     :param vector: 
     :return: 
     """
+    logging.info('Writing RAM via registers')
     numwords = 0
     f.registers.ram_control.write_int(0)
     f.registers.ram_control.write(sel=True)
@@ -75,8 +77,10 @@ def read_snap(plen=-1):
     """
     def print_snap_line(ctr, data):
         print '%5i' % ctr,
-        for k in data.keys():
-            print '%s(%i)' % (k, data[k][ctr]),
+        print 'waddr_raw(%5i)' % data['waddr_raw'][ctr],
+        print 'sbram_map(%5i)' % data['waddr_map1'][ctr],
+        print 'dpram_map(%5i)' % data['waddr_map2'][ctr],
+        print 'spram_map(%5i)' % data['waddr_map3'][ctr],
         print ''
 
     d = f.snapshots.waddrs_ss.read(man_valid=True, man_trig=True)['data']
@@ -102,20 +106,33 @@ def read_snap(plen=-1):
             print_snap_line(ctr, d)
     return rv
 
+# the the second shared bram
+for ctr, vword in enumerate(range(4096)):
+    ss = struct.pack('>I', vword)
+    f.write('waddr_map2', ss, ctr*4)
+# then read a few via the register
+logging.info('THESE VALUES SHOULD NOT BE ZERO')
+for ctr in range(1, 11):
+    f.registers.ram_control.write(addr=ctr)
+    print ctr, f.registers.map2_data.read()['data']['reg']
+print ''
 
 # the outputs should all be the same
-write_sbram(addr_map_same)
-write_others(addr_map_same)
+logging.info('WRITING MAP - ALL OUTPUT SHOULD BE THE SAME')
+write_sbram(addr_map_forwards)
+write_others(addr_map_forwards)
 d = read_snap()
 print ''
 
 # the three RAM outputs should all be the same
-write_sbram(addr_map)
-write_others(addr_map)
+logging.info('WRITING INVERSE MAP - ALL OUTPUT SHOULD BE THE SAME')
+write_sbram(addr_map_reverse)
+write_others(addr_map_reverse)
 d = read_snap()
 print ''
 
 # the three RAM outputs should all be zero
+logging.info('WRITING ZEROS - ALL OUTPUT SHOULD BE ZEROS')
 write_sbram(addr_map_zeros)
 write_others(addr_map_zeros)
 d = read_snap()
