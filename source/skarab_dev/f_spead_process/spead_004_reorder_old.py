@@ -21,7 +21,6 @@ logging.basicConfig(level=logging.INFO)
 
 FPG = '/home/paulp/bofs/spead_test_reorder_2017-5-11_1435.fpg'
 FPG = '/home/paulp/bofs/spead_test_reorder_2017-6-15_1453.fpg'
-FPG = '/home/paulp/bofs/spead_004_reorder_.fpg'
 
 if os.environ['CORR2UUT'].strip() == '':
     print 'CORR2UUT environment variables not found.'
@@ -149,8 +148,7 @@ def read_reosnap_unpack():
         print '%5i' % ctr,
         for k in d.keys():
             print '%s(%i)' % (k, d[k][ctr]),
-        d80 = (d['d80_2'][ctr] << 48) + (d['d80_1'][ctr] << 16) + \
-            d['d80_0'][ctr]
+        d80 = (d['d80_2'][ctr] << 48) + (d['d80_1'][ctr] << 16) + d['d80_0'][ctr]
         print 'd80(%i)' % d80,
         if d['overflow'][ctr]:
             print 'OVERFLOW',
@@ -199,25 +197,34 @@ def read_reosnap_write_inner(man_valid=True):
             last_pkt_start = ctr
         print ''
 
-def reset_counters():
-    """
-    
-    :return: 
-    """
-    f.registers.control.write(cnt_rst='pulse', dbg_rst='pulse')
-    f.registers.unpack_control.write(cnt_rst='pulse')
-
 
 def print_status_regs():
-    """
-    
-    :return: 
-    """
-    print 'status_barrel:', f.registers.status_barrel.read()['data']
-    print 'status_spead0:', f.registers.status_spead0.read()['data']
-    print 'status_spead1:', f.registers.status_spead1.read()['data']
-    print 'status_reo0:', f.registers.status_reo0.read()['data']
-    print 'status_reo1:', f.registers.status_reo1.read()['data']
+    # gbe
+    print 'rx_badframe_count:', f.registers.rx_badframe_count.read()['data']
+    print 'rx_overrun_count:', f.registers.rx_overrun_count.read()['data']
+    print 'rx_valid_ctr:', f.registers.rx_valid_ctr.read()['data']
+    print 'rx_eof_ctr:', f.registers.rx_eof_ctr.read()['data']
+    # pad
+    print 'barrel_dv_ctr:', f.registers.barrel_dv_ctr.read()['data']
+    print 'barrel_eof_ctr:', f.registers.barrel_eof_ctr.read()['data']
+    print 'barrel_hdrfix:', f.registers.barrel_hdrfix.read()['data']
+    # spead
+    print 'spead_pkt_cnt:', f.registers.spead_pkt_cnt.read()['data']
+    print 'spead_err_magic:', f.registers.spead_err_magic.read()['data']
+    print 'spead_err_hdr:', f.registers.spead_err_hdr.read()['data']
+    print 'spead_err_pad:', f.registers.spead_err_pad.read()['data']
+    print 'spead_err_len:', f.registers.spead_err_len.read()['data']
+    for ctr in range(3):
+        print 'spead_err_time%i:' % ctr, \
+            f.registers['spead_err_time%i' % ctr].read()['data']
+    # reo
+    print 'reo_err_disc:', f.registers.reo_err_disc.read()['data']
+    print 'reo_err_relock:', f.registers.reo_err_relock.read()['data']
+    print 'reo_err_pkttime:', f.registers.reo_err_pkttime.read()['data']
+    print 'reo_err_timestep:', f.registers.reo_err_timestep.read()['data']
+    print 'reo_pkt_cnt:', f.registers.reo_pkt_cnt.read()['data']
+    # unpack
+    print 'unpack_of_cnt:', f.registers.unpack_of_cnt.read()['data']
     print 'unpack_ramp_err:', f.registers.unpack_ramp_err.read()['data']
     print 'unpack_pol0_err:', f.registers.unpack_pol0_err.read()['data']
     print 'unpack_pol1_err:', f.registers.unpack_pol1_err.read()['data']
