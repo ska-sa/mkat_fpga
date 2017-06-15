@@ -23,7 +23,7 @@ def unpack_word256(word):
     pktcntm = (word[8] << 16) | (word[9] << 0)
     rampm = (word[10] << 16) | (word[11] << 0)
     walkl = (word[4] << 48) | (word[5] << 32) | (word[6] << 16) | \
-                (word[7] << 0)
+        (word[7] << 0)
     pktcntl = (word[0] << 16) | (word[1] << 0)
     rampl = (word[2] << 16) | (word[3] << 0)
     return mark, walkm, walkl, pktcntm, pktcntl, rampm, rampl

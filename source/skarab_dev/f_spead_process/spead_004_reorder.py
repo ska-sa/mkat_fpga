@@ -12,14 +12,10 @@ but containing a ramp from 0:639, not actual noise data.
 import sys
 import IPython
 import time
-import argparse
 import os
 import logging
 
-from casperfpga import utils as fpgautils, tengbe
-from casperfpga import spead as casperspead, snap as caspersnap
-from casperfpga import skarab_fpga
-from corr2 import utils
+from casperfpga import CasperFpga
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,11 +25,12 @@ if os.environ['CORR2UUT'].strip() == '':
     print 'CORR2UUT environment variables not found.'
     sys.exit(0)
 
-f = skarab_fpga.SkarabFpga(os.environ['CORR2UUT'])
+f = CasperFpga(os.environ['CORR2UUT'])
 f.get_system_information(FPG)
 
-if f.gbes[0].get_port() != 30000:
-    f.gbes[0].set_port(30000)
+fortygbe = f.gbes[f.gbes.names()[0]]
+if fortygbe.get_port() != 7148:
+    fortygbe.set_port(7148)
 
 
 def read_reosnap_read_write():
@@ -268,34 +265,43 @@ def check_ramps(spead_packets):
     return errors
 
 
-def print_reorder_snaps():
+def print_reorder_snaps(verbose=False):
     # check the reorder snapshots
     d = read_reorder_snaps()
     last_time = d['timestamp'][0] - 1
     counters = {'time_errors': 0, 'syncs': 0, 'recv_errors': 0}
     for ctr in range(len(d['timestamp'])):
-        print '%6i sync(%i) dv(%i) recv(%i)' % (
-            ctr, d['sync'][ctr], d['dv'][ctr], d['recv'][ctr]),
+        if verbose:
+            print '%6i sync(%i) dv(%i) recv(%i)' % (
+                ctr, d['sync'][ctr], d['dv'][ctr], d['recv'][ctr]),
         for dctr in range(4):
             k = 'p1_d%i' % dctr
-            print '%s(%3i)' % (k, d[k][ctr]),
-        print 'timestamp(%10i)' % d['timestamp'][ctr],
+            if verbose:
+                print '%s(%3i)' % (k, d[k][ctr]),
+        if verbose:
+            print 'timestamp(%10i)' % d['timestamp'][ctr],
         for dctr in range(4):
             k = 'p0_d%i' % dctr
-            print '%s(%3i)' % (k, d[k][ctr]),
+            if verbose:
+                print '%s(%3i)' % (k, d[k][ctr]),
         if d['timestamp'][ctr] != last_time:
             if d['timestamp'][ctr] - last_time != 1:
-                print 'TIME_ERROR'
+                if verbose:
+                    print 'TIME_ERROR'
                 counters['time_errors'] += 1
             last_time = d['timestamp'][ctr]
         if d['sync'][ctr] == 1:
-            print 'SYNC',
+            if verbose:
+                print 'SYNC',
             counters['syncs'] += 1
         if d['recv'][ctr] != 3:
-            print 'RECV_ERR',
+            if verbose:
+                print 'RECV_ERR',
             counters['recv_errors'] += 1
-        print ''
+        if verbose:
+            print ''
     print counters
+    return counters['time_errors'] + counters['recv_errors']
 
 
 def snap_to_mat():

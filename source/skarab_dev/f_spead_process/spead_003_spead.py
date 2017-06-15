@@ -195,62 +195,71 @@ def check_ramps(spead_packets):
         print ''
     return errors
 
-# process the SPEAD data
-rawdata = read_spead_snaps()
-gbe_packets = caspersnap.Snap.packetise_snapdata(rawdata, 'eof')
-lasttime = rawdata['timestamp'][0]
-lastheapid = rawdata['heapid'][0]
-if lastheapid != lasttime:
-    print 'HEAP_ID DOES NOT MATCH TIMESTAMP?!'
-    IPython.embed()
-spead_errors = 0
-packet_jumps = []
-for ctr, packet in enumerate(gbe_packets[1:]):
-    errstr = ''
-    d = [0] * 640
-    d[0:640:4] = packet['d0']
-    d[1:640:4] = packet['d1']
-    d[2:640:4] = packet['d2']
-    d[3:640:4] = packet['d3']
-    if d != range(640):
-        spead_errors += 1
-        errstr += 'PACKET_DATA_ERROR '
-    packettime = packet['timestamp'][0]
-    packetheapid = packet['heapid'][0]
-    packetidx = (packettime >> 12) & 15
-    if packettime != packetheapid:
-        spead_errors += 1
-        errstr += 'HEAP_ID!=TIMESTAMP '
-    if len(packet['timestamp']) != 160:
-        spead_errors += 1
-        errstr += 'PACKET_LEN!=160(%i)' % len(packet['timestamp'])
-    for pktctr in range(len(packet['timestamp'])):
-        print '(%3i,%3i)' % (ctr, pktctr), \
-            packet['timestamp'][pktctr], packet['heapid'][pktctr], \
-            packet['polid'][pktctr], packet['dv'][pktctr], \
-            packet['eof'][pktctr], \
-            '%4i' % packet['d3'][pktctr], '%4i' % packet['d2'][pktctr], \
-            '%4i' % packet['d1'][pktctr], '%4i' % packet['d0'][pktctr],
-        print 'pkt_idx(%2i)' % packetidx,
-        if packet['timestamp'][pktctr] != packettime:
-            spead_errors += 1
-            print 'TIME_ERROR',
-        if packet['heapid'][pktctr] != packetheapid:
-            spead_errors += 1
-            print 'HEAP_ERROR',
-        if packet['eof'][pktctr] == 1:
-            timediff = packettime - lasttime
-            if timediff not in packet_jumps:
-                packet_jumps.append(timediff)
-            print 'EOF(%i)' % timediff,
-            lasttime = packettime
-        print ''
-    print errstr
-print 'spead_errors:', spead_errors
-print 'spead packet jumps:', packet_jumps
 
-speadsnap_to_mat()
+def check_snap_data(print_detail=True):
+    rawdata = read_spead_snaps()
+    gbe_packets = caspersnap.Snap.packetise_snapdata(rawdata, 'eof')
+    lasttime = rawdata['timestamp'][0]
+    lastheapid = rawdata['heapid'][0]
+    if lastheapid != lasttime:
+        print 'HEAP_ID DOES NOT MATCH TIMESTAMP?!'
+        IPython.embed()
+    spead_errors = 0
+    packet_jumps = []
+    for ctr, packet in enumerate(gbe_packets[1:]):
+        errstr = ''
+        d = [0] * 640
+        d[0:640:4] = packet['d0']
+        d[1:640:4] = packet['d1']
+        d[2:640:4] = packet['d2']
+        d[3:640:4] = packet['d3']
+        if d != range(640):
+            spead_errors += 1
+            errstr += 'PACKET_DATA_ERROR '
+        packettime = packet['timestamp'][0]
+        packetheapid = packet['heapid'][0]
+        packetidx = (packettime >> 12) & 15
+        if packettime != packetheapid:
+            spead_errors += 1
+            errstr += 'HEAP_ID!=TIMESTAMP '
+        if len(packet['timestamp']) != 160:
+            spead_errors += 1
+            errstr += 'PACKET_LEN!=160(%i)' % len(packet['timestamp'])
+        for pktctr in range(len(packet['timestamp'])):
+            if print_detail:
+                print '(%3i,%3i)' % (ctr, pktctr), \
+                    packet['timestamp'][pktctr], packet['heapid'][pktctr], \
+                    packet['polid'][pktctr], packet['dv'][pktctr], \
+                    packet['eof'][pktctr], '%4i' % packet['d3'][pktctr], \
+                    '%4i' % packet['d2'][pktctr], '%4i' % packet['d1'][pktctr],\
+                    '%4i' % packet['d0'][pktctr],
+                print 'pkt_idx(%2i)' % packetidx,
+            if packet['timestamp'][pktctr] != packettime:
+                spead_errors += 1
+                if print_detail:
+                    print 'TIME_ERROR',
+            if packet['heapid'][pktctr] != packetheapid:
+                spead_errors += 1
+                if print_detail:
+                    print 'HEAP_ERROR',
+            if packet['eof'][pktctr] == 1:
+                timediff = packettime - lasttime
+                if timediff not in packet_jumps:
+                    packet_jumps.append(timediff)
+                    if print_detail:
+                        print 'EOF(%i)' % timediff,
+                lasttime = packettime
+            if print_detail:
+                print ''
+        if print_detail:
+            print errstr
+    print 'spead_errors:', spead_errors
+    print 'spead packet jumps:', packet_jumps
 
-# IPython.embed()
+
+check_snap_data()
+
+#speadsnap_to_mat()
+IPython.embed()
 
 # end

@@ -10,7 +10,7 @@ import struct
 
 from casperfpga import skarab_fpga
 
-FPG = '/home/paulp/bofs/sbram_test_2017-6-9_1050.fpg'
+FPG = '/home/paulp/bofs/sbram_test_2017-6-12_1604.fpg'
 
 logging.basicConfig(level=logging.INFO)
 
