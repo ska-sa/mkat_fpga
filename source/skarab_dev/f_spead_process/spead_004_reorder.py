@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 
 FPG = '/home/paulp/bofs/spead_test_reorder_2017-5-11_1435.fpg'
 FPG = '/home/paulp/bofs/spead_test_reorder_2017-6-15_1453.fpg'
-FPG = '/home/paulp/bofs/spead_004_reorder_.fpg'
+FPG = '/home/paulp/bofs/spead_004_reorder_2017-6-15_1616.fpg'
 
 if os.environ['CORR2UUT'].strip() == '':
     print 'CORR2UUT environment variables not found.'
@@ -198,6 +198,7 @@ def read_reosnap_write_inner(man_valid=True):
             print 'PACKET_LEN(%i)' % (ctr - last_pkt_start),
             last_pkt_start = ctr
         print ''
+
 
 def reset_counters():
     """
