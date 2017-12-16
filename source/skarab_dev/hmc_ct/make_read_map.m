@@ -1,18 +1,18 @@
-function map = make_read_map(num_chans, num_x)
+function map = make_read_map(num_chans, num_x, output_len)
 
 % num_chans = 4096;
 parallel_freqs = 8;
 num_hmc = 2;
 % num_x = 16;
 x_per_board = 4;
-output_len = 256;
-output_len = 16;
+%output_len = 256;
+%output_len = 16;
 
 % do not edit below this line
 
-x_map = make_x_interleave(num_x, x_per_board)
-spectrum_step = num_chans / (parallel_freqs * num_hmc)
-chans_per_x = spectrum_step / num_x
+x_map = make_x_interleave(num_x, x_per_board);
+spectrum_step = num_chans / (parallel_freqs * num_hmc);
+chans_per_x = spectrum_step / num_x;
 
 map = zeros(1, (num_chans / (parallel_freqs * num_hmc)) * output_len);
 idx = 1;
