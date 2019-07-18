@@ -95,7 +95,7 @@ my_nomad = nomad.Nomad(host=nomad_host)
 names = build_name
 paths = destination_folder_build[:-1]
 
-nomad_job_name = "{}_{}_build".format(username,names)
+nomad_job_name = "{}_{}_{}_build".format(timestamp,username,names)
 
 print('Submitting Job')
 n = names
@@ -137,7 +137,7 @@ job = {'Job': {'AllAtOnce': None,
       'Env': None,
       'KillTimeout': None,
       'LogConfig': None,
-      'Meta': None,
+      'Meta': {"CPU_CORES":"${attr.cpu.numcores}","CPU_FREQUENCY":"${attr.cpu.frequency}"},
       'Name': 'build_fpg',
       'Resources': {'CPU': 25000,
        'DiskMB': 5000,
