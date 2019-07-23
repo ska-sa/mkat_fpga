@@ -34,9 +34,10 @@ split_index = str.rindex(file_path,'/');
 directory = file_path[:split_index]
 build_name = file_path[split_index+1:].replace(".slx","")
 username = getpass.getuser();
+timestamp = time.strftime("%y-%m-%d_%Hh%M");
 
 nomad_host = 'dametjie.sdp.kat.ac.za';
-sub_directory= "{}_{}_{}".format(time.strftime("%y-%m-%d_%Hh%M"),username,build_name)
+sub_directory= "{}_{}_{}".format(timestamp,username,build_name)
 destination_folder_move = '/data/cbf_builds/{}/'.format(sub_directory)
 destination_folder_build = '/sunstore/cbf_builds/{}/'.format(sub_directory)
 
@@ -94,7 +95,7 @@ my_nomad = nomad.Nomad(host=nomad_host)
 names = build_name
 paths = destination_folder_build[:-1]
 
-nomad_job_name = "{}_{}_build".format(username,names)
+nomad_job_name = "{}_{}_{}_build".format(timestamp,username,names)
 
 print('Submitting Job')
 n = names
@@ -102,10 +103,10 @@ p = paths
 job = {'Job': {'AllAtOnce': None,
   'Constraints': None,
   'CreateIndex': None,
-  'Datacenters': [,'capetown'],
+  'Datacenters': ['capetown'],
   'ID': nomad_job_name,
   'JobModifyIndex': None,
-  'Meta': None,
+  'Meta': {"submit_date":"{}".format(timestamp),"department":"cbf",'user':username,'resource_location':destination_folder_build},
   'ModifyIndex': None,
   'Name': nomad_job_name,
   'Namespace': None,
@@ -136,7 +137,7 @@ job = {'Job': {'AllAtOnce': None,
       'Env': None,
       'KillTimeout': None,
       'LogConfig': None,
-      'Meta': None,
+      'Meta': {"CPU_CORES":"${attr.cpu.numcores}","CPU_FREQUENCY":"${attr.cpu.frequency}"},
       'Name': 'build_fpg',
       'Resources': {'CPU': 25000,
        'DiskMB': 5000,
@@ -147,7 +148,8 @@ job = {'Job': {'AllAtOnce': None,
       'User': '',
       'Vault': None}],
     'Constraints':[
-      {'LTarget':'${meta.has_sunstore}','RTarget':'true','Operand':'=',}],
+      {'LTarget':'${meta.has_sunstore}','RTarget':'true','Operand':'=',},
+      {'LTarget':'${attr.cpu.frequency}','RTarget':'2500','Operand':'>=',}],
     'Update': None}],
   'Type': 'batch',
   'VaultToken': None,
