@@ -30,6 +30,8 @@ if(~os.path.isfile(file_arg) == False):
 file_path = os.path.abspath(file_arg);
 split_index = str.rindex(file_path,'/');
 
+storage_password = raw_input("Insert password for kat@sunstore.sdp.kat.ac.za:\n")
+
 #Setting up directory paths - a bit messy, should be cleaned up
 directory = file_path[:split_index]
 build_name = file_path[split_index+1:].replace(".slx","")
@@ -65,7 +67,7 @@ def createSSHClient(server, port, user, password):
     return client
 
 print('Opening SSH Connection to shared storage server.')
-ssh = createSSHClient('sunstore.sdp.kat.ac.za', 22, 'kat', 'kat')
+ssh = createSSHClient('sunstore.sdp.kat.ac.za', 22, 'kat', storage_password)
 print('Creating Directories.')
 ssh.exec_command('mkdir {}'.format(destination_folder_move[:-1]))
 
