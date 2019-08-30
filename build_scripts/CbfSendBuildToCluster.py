@@ -1,3 +1,5 @@
+#Author: Gareth Callanan
+
 import paramiko
 from scp import SCPClient
 import time
@@ -17,6 +19,9 @@ parser.add_argument(
 parser.add_argument(
     '-r', '--RAM', dest='ram', action='store', required=True,type=int,
     help='Requred RAM(MB)')
+parser.add_argument(
+    '-u', '--UID', dest='uid', action='store', required=False,type=int,
+    help='Telegram chat ID. Speak to Gareth to get this to work. Will Send')
 args = parser.parse_args()
 
 #Parse Command Line arguments
@@ -30,7 +35,7 @@ if(~os.path.isfile(file_arg) == False):
 file_path = os.path.abspath(file_arg);
 split_index = str.rindex(file_path,'/');
 
-storage_password = raw_input("Insert password for kat@sunstore.sdp.kat.ac.za:\n")
+storage_password = raw_input("Insert password for kat@epyc01.sdp.kat.ac.za:\n")
 
 #Setting up directory paths - a bit messy, should be cleaned up
 directory = file_path[:split_index]
@@ -40,7 +45,7 @@ timestamp = time.strftime("%y-%m-%d_%Hh%M");
 
 nomad_host = 'dametjie.sdp.kat.ac.za';
 sub_directory= "{}_{}_{}".format(timestamp,username,build_name)
-destination_folder_move = '/data/cbf_builds/{}/'.format(sub_directory)
+destination_folder_move = '/shared-brp/cbf_builds/{}/'.format(sub_directory)
 destination_folder_build = '/sunstore/cbf_builds/{}/'.format(sub_directory)
 
 #Rename Files that need to be renamed
@@ -58,7 +63,7 @@ for dname, dirs, files in os.walk("{}/{}".format(directory,build_name)):
         with open(fpath, "w") as f:
             f.write(s)
 
-#Open and transfer documents
+#Open connection and transfer documents
 def createSSHClient(server, port, user, password):
     client = paramiko.SSHClient()
     client.load_system_host_keys()
@@ -66,16 +71,21 @@ def createSSHClient(server, port, user, password):
     client.connect(server, port, user, password)
     return client
 
-print('Opening SSH Connection to shared storage server.')
-ssh = createSSHClient('sunstore.sdp.kat.ac.za', 22, 'kat', storage_password)
-print('Creating Directories.')
-ssh.exec_command('mkdir {}'.format(destination_folder_move[:-1]))
+failed = False
+try:
+	print('Opening SSH Connection to shared storage server.')
+	ssh = createSSHClient('epyc01.sdp.kat.ac.za', 22, 'kat', storage_password)
+	print('Creating Directories.')
+	ssh.exec_command('mkdir {}'.format(destination_folder_move[:-1]))
 
-print('Transferring Files to shared storage server')
-scp = SCPClient(ssh.get_transport())
-scp.put('{}/{}'.format(directory,build_name),remote_path=destination_folder_move,recursive=True)
+	print('Transferring Files to shared storage server')
+	scp = SCPClient(ssh.get_transport())
+	scp.put('{}/{}'.format(directory,build_name),remote_path=destination_folder_move,recursive=True)
 
-scp.put('{}/{}.slx'.format(directory,build_name),remote_path=destination_folder_move,recursive=False)
+	scp.put('{}/{}.slx'.format(directory,build_name),remote_path=destination_folder_move,recursive=False)
+except Exception as e:
+	print 'Error copying data to sunstore: '+repr(e)
+	failed = True
 
 #Rename files back
 print('Restoring current directory back to its default state.')
@@ -88,6 +98,10 @@ for dname, dirs, files in os.walk("{}/{}".format(directory,build_name)):
         with open(fpath, "w") as f:
             f.write(s)
 
+if(failed):
+	print("Copy to sunstore failed. Exiting...")
+	sys.exit(1)
+
 #Submit Nomad Job
 
 print('Connecting to Nomad cluster')
@@ -97,7 +111,8 @@ my_nomad = nomad.Nomad(host=nomad_host)
 names = build_name
 paths = destination_folder_build[:-1]
 
-nomad_job_name = "{}_{}_{}_build".format(timestamp,username,names)
+nomad_job_name_to_display = "{}_{}_{}_build".format(timestamp,username,names)
+nomad_job_name="cbf_jobs"
 
 print('Submitting Job')
 n = names
@@ -105,14 +120,19 @@ p = paths
 job = {'Job': {'AllAtOnce': None,
   'Constraints': None,
   'CreateIndex': None,
-  'Datacenters': ['capetown'],
-  'ID': nomad_job_name,
+  'Datacenters': ['brp0'],
+  'ID': "{}".format(nomad_job_name),
   'JobModifyIndex': None,
   'Meta': {"submit_date":"{}".format(timestamp),"department":"cbf",'user':username,'resource_location':destination_folder_build},
   'ModifyIndex': None,
-  'Name': nomad_job_name,
+  'Name': 'cbf_jobs',
   'Namespace': None,
-  'ParameterizedJob': None,
+  'ParameterizedJob': {
+    'Payload': 'optional',
+    'MetaRequired': [
+      'file_path'
+     ],
+     'MetaOptional': ['uid'],},
   'ParentID': None,
   'Payload': None,
   'Periodic': None,
@@ -126,13 +146,13 @@ job = {'Job': {'AllAtOnce': None,
   'TaskGroups': [{'Constraints': None,
     'Count': 1,
     'Meta': None,
-    'Name': 'cache',
+    'Name': nomad_job_name_to_display,
     'RestartPolicy': {'Attempts': 3,
      'Delay': 25000000000,
      'Interval': 300000000000,
      'Mode': 'delay'},
-    'Tasks': [{'Artifacts': [{'GetterSource':'http://sunstore.sdp.kat.ac.za/cbf_builds/vivado_2018p2_image.tar'}],
-      'Config': {'load':'vivado_2018p2_image.tar','image': 'vivado:2018p2','mac_address':'18:66:da:56:e1:e5','command':'/bin/bash','volumes':['/sunstore:/sunstore'],'args': ["-c","/home/jasper/build_script.sh -p {}/{}.slx".format(p,n)],'hostname':'jasper'},
+    'Tasks': [{'Artifacts': None,
+      'Config': {'image': 'harbor.sdp.kat.ac.za:443/cbf/vivado:2019p1','network_mode':'host','command':'/bin/bash','volumes':['/shared-brp:/sunstore'],'args': ["-c","/home/jasper/build_script.sh -p ${NOMAD_META_FILE_PATH}.slx -u ${NOMAD_META_UID}"]},
       'Constraints': None,
       'DispatchPayload': None,
       'Driver': 'docker',
@@ -140,9 +160,8 @@ job = {'Job': {'AllAtOnce': None,
       'KillTimeout': None,
       'LogConfig': None,
       'Meta': {"CPU_CORES":"${attr.cpu.numcores}","CPU_FREQUENCY":"${attr.cpu.frequency}"},
-      'Name': 'build_fpg',
-      'Resources': {'CPU': 25000,
-       'DiskMB': 5000,
+      'Name': nomad_job_name_to_display,
+      'Resources': {'CPU': 20000,
        'IOPS': None,
        'MemoryMB': ram},
       'ShutdownDelay': 0,
@@ -150,8 +169,10 @@ job = {'Job': {'AllAtOnce': None,
       'User': '',
       'Vault': None}],
     'Constraints':[
-      {'LTarget':'${meta.has_sunstore}','RTarget':'true','Operand':'=',},
-      {'LTarget':'${attr.cpu.frequency}','RTarget':'2500','Operand':'>=',}],
+       {'LTarget':'${node.unique.name}','RTarget':'epyc01','Operand':'=',},
+       {'LTarget':'${meta.has_sunstore}','RTarget':'true','Operand':'=',}],
+      #{'LTarget':'${attr.cpu.frequency}','RTarget':'2500','Operand':'>=',}],
+      #{'LTarget':'${attr.cpu.numcores}','RTarget':'16','Operand':'>=',}],
     'Update': None}],
   'Type': 'batch',
   'VaultToken': None,
@@ -160,5 +181,8 @@ job = {'Job': {'AllAtOnce': None,
 print job['Job']['TaskGroups'][0]['Tasks'][0]['Config']['args']
 
 response = my_nomad.job.register_job(nomad_job_name, job)
+response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046"})
 
-print 'Job submitted go to: {}:4646/ui/jobs/{} to view progress'.format(nomad_host,nomad_job_name)
+print 'Job submitted go to: http://{}:4646/ui/jobs/{} to view progress'.format(nomad_host,response['DispatchedJobID'].replace("/","%2F"))
+
+
