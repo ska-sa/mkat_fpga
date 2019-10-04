@@ -1,0 +1,5 @@
+SCPClient
+paramiko
+python-nomad
+argparse
+scp
