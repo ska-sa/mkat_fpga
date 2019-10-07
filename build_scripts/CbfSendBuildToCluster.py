@@ -17,6 +17,9 @@ parser.add_argument(
     '-i', '--input_file', dest='file', action='store', required=True,
     help='Project to build')
 parser.add_argument(
+    '-p', '--pass', dest='password', action='store', required=False,
+    help='Password to be used for secure copy to epyc01.sdp.kat.ac.za')
+parser.add_argument(
     '-r', '--RAM', dest='ram', action='store', required=True,type=int,
     help='Requred RAM(MB)')
 parser.add_argument(
@@ -27,15 +30,21 @@ args = parser.parse_args()
 #Parse Command Line arguments
 file_arg = args.file;
 ram = args.ram
+storage_password = args.password
 
 if(~os.path.isfile(file_arg) == False):
 	print("File does not exist")
 	sys.exit()
 
+if storage_password==None:
+    #This try catch is to support python2 and python3
+    try:
+        storage_password = raw_input("Insert password for kat@epyc01.sdp.kat.ac.za:\n")
+    except NameError:
+        storage_password = input("Insert password for kat@epyc01.sdp.kat.ac.za:\n")
+
 file_path = os.path.abspath(file_arg);
 split_index = str.rindex(file_path,'/');
-
-storage_password = raw_input("Insert password for kat@epyc01.sdp.kat.ac.za:\n")
 
 #Setting up directory paths - a bit messy, should be cleaned up
 directory = file_path[:split_index]
@@ -43,7 +52,7 @@ build_name = file_path[split_index+1:].replace(".slx","")
 username = getpass.getuser();
 timestamp = time.strftime("%y-%m-%d_%Hh%M");
 
-nomad_host = 'dametjie.sdp.kat.ac.za';
+
 sub_directory= "{}_{}_{}".format(timestamp,username,build_name)
 destination_folder_move = '/shared-brp/cbf_builds/{}/'.format(sub_directory)
 destination_folder_build = '/sunstore/cbf_builds/{}/'.format(sub_directory)
@@ -76,15 +85,17 @@ try:
 	print('Opening SSH Connection to shared storage server.')
 	ssh = createSSHClient('epyc01.sdp.kat.ac.za', 22, 'kat', storage_password)
 	print('Creating Directories.')
+	print('mkdir {}'.format(destination_folder_move[:-1]))
 	ssh.exec_command('mkdir {}'.format(destination_folder_move[:-1]))
 
 	print('Transferring Files to shared storage server')
 	scp = SCPClient(ssh.get_transport())
-	scp.put('{}/{}'.format(directory,build_name),remote_path=destination_folder_move,recursive=True)
-
+	print('{}/{}.slx'.format(directory,build_name))
 	scp.put('{}/{}.slx'.format(directory,build_name),remote_path=destination_folder_move,recursive=False)
+	print('{}/{}'.format(directory,build_name))
+	scp.put('{}/{}'.format(directory,build_name),remote_path=destination_folder_move,recursive=True)
 except Exception as e:
-	print 'Error copying data to sunstore: '+repr(e)
+	print('Error copying data to sunstore: '+repr(e))
 	failed = True
 
 #Rename files back
@@ -104,10 +115,6 @@ if(failed):
 
 #Submit Nomad Job
 
-print('Connecting to Nomad cluster')
-#'dametjie.sdp.kat.ac.za'
-my_nomad = nomad.Nomad(host=nomad_host)
-#[{'source':'http://sunstore.sdp.kat.ac.za/cbf_builds/vivado_image'}]
 names = build_name
 paths = destination_folder_build[:-1]
 
@@ -120,7 +127,7 @@ p = paths
 job = {'Job': {'AllAtOnce': None,
   'Constraints': None,
   'CreateIndex': None,
-  'Datacenters': ['brp0'],
+  'Datacenters': ['brp'],
   'ID': "{}".format(nomad_job_name),
   'JobModifyIndex': None,
   'Meta': {"submit_date":"{}".format(timestamp),"department":"cbf",'user':username,'resource_location':destination_folder_build},
@@ -178,11 +185,21 @@ job = {'Job': {'AllAtOnce': None,
   'VaultToken': None,
   'Version': None}}
 
-print job['Job']['TaskGroups'][0]['Tasks'][0]['Config']['args']
+print(job['Job']['TaskGroups'][0]['Tasks'][0]['Config']['args'])
 
-response = my_nomad.job.register_job(nomad_job_name, job)
-response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046"})
+print('Connecting to Nomad cluster')
 
-print 'Job submitted go to: http://{}:4646/ui/jobs/{} to view progress'.format(nomad_host,response['DispatchedJobID'].replace("/","%2F"))
+nomad_hosts = ['hashi1.sdpdyn.kat.ac.za','hashi2.sdpdyn.kat.ac.za','hashi3.sdpdyn.kat.ac.za']
+
+for i in nomad_hosts:
+    nomad_host = i;
+    try:
+        my_nomad = nomad.Nomad(host=nomad_host)
+        response = my_nomad.job.register_job(nomad_job_name, job)
+        response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046"})
+        print('Job submitted go to: http://{}:4646/ui/jobs/{} to view progress'.format(nomad_host,response['DispatchedJobID'].replace("/","%2F")))
+        break;
+    except Exception as e:
+        print('Error submitting job to',nomad_host, ':',repr(e))
 
 
