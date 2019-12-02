@@ -189,7 +189,7 @@ print(job['Job']['TaskGroups'][0]['Tasks'][0]['Config']['args'])
 
 print('Connecting to Nomad cluster')
 
-nomad_hosts = ['hashi1.sdpdyn.kat.ac.za','hashi2.sdpdyn.kat.ac.za','hashi3.sdpdyn.kat.ac.za']
+nomad_hosts = ['hashi1.sdp.kat.ac.za','hashi2.sdp.kat.ac.za','hashi3.sdp.kat.ac.za','hashi1.sdpdyn.kat.ac.za','hashi2.sdpdyn.kat.ac.za','hashi3.sdpdyn.kat.ac.za']
 
 for i in nomad_hosts:
     nomad_host = i;
