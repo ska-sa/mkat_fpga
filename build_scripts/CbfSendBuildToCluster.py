@@ -27,18 +27,18 @@ parser.add_argument(
 #    help='Telegram chat ID. Speak to Gareth to get this to work. Will Send')
 parser.add_argument(
     '-m', '--mlib_devel', dest='mlib_devel', action='store', required=False, default="default" ,
-    help='Path to mlib_devel directory to be copied to  server.')
+    help='Name of mlib_devel directory to use in /shared-brp/cbf_toolflow/. Will pull fresh mlib_devel from git if left blank.')
 args = parser.parse_args()
 
 transferMlibDevel=False
 if(args.mlib_devel != "default"):
-    print("Will transfer custom mlib_devel to server")
+    print("Will use existing mlib_devel directory")
     transferMlibDevel=True
 else:
     print("Will pull fresh mlib_devel from GitHub")
 
 #Parse Command Line arguments
-file_arg = args.file;
+file_arg = args.file
 ram = args.ram
 storage_password = args.password
 
@@ -103,9 +103,9 @@ try:
 	scp.put('{}/{}.slx'.format(directory,build_name),remote_path=destination_folder_move,recursive=False)
 	print('\t{}/{}'.format(directory,build_name))
 	scp.put('{}/{}'.format(directory,build_name),remote_path=destination_folder_move,recursive=True)
-	if(transferMlibDevel):
-		scp.put(args.mlib_devel,remote_path=destination_folder_move,recursive=True)
-        print('\t{}'.format(args.mlib_devel))
+	#if(transferMlibDevel):
+	#	scp.put(args.mlib_devel,remote_path=destination_folder_move,recursive=True)
+    #    print('\t{}'.format(args.mlib_devel))
 except Exception as e:
 	print('Error copying data to sunstore: '+repr(e))
 	failed = True
@@ -155,7 +155,7 @@ job = {'Job': {'AllAtOnce': None,
     ],
     'MetaOptional': [
         'uid',
-        'mlib_devel_path'
+        'mlib_devel_name'
     ],    
    },
   'ParentID': None,
@@ -177,7 +177,7 @@ job = {'Job': {'AllAtOnce': None,
      'Interval': 300000000000,
      'Mode': 'delay'},
     'Tasks': [{'Artifacts': None,
-      'Config': {'image': 'harbor.sdp.kat.ac.za:443/cbf/vivado:2019p1','network_mode':'host','command':'/bin/bash','volumes':['/shared-brp:/sunstore'],'args': ["-c","/home/jasper/build_script.sh -p ${NOMAD_META_FILE_PATH}.slx -u ${NOMAD_META_UID} -m ${NOMAD_META_MLIB_DEVEL_PATH}"]},
+      'Config': {'image': 'harbor.sdp.kat.ac.za:443/cbf/vivado:2019p1','network_mode':'host','command':'/bin/bash','volumes':['/shared-brp:/sunstore'],'args': ["-c","/home/jasper/build_script.sh -p ${NOMAD_META_FILE_PATH}.slx -u ${NOMAD_META_UID} -m ${NOMAD_META_MLIB_DEVEL_NAME}"]},
       'Constraints': None,
       'DispatchPayload': None,
       'Driver': 'docker',
@@ -215,9 +215,9 @@ for i in nomad_hosts:
         my_nomad = nomad.Nomad(host=nomad_host)
         response = my_nomad.job.register_job(nomad_job_name, job)
         if(transferMlibDevel):
-            response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046",'mlib_devel_path':"{}/mlib_devel".format(p)})
+            response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046",'mlib_devel_name':args.mlib_devel})
         else:
-            response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046",'mlib_devel_path':"default".format(p)})
+            response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046",'mlib_devel_name':"default"})
         print('Job submitted go to: http://{}:4646/ui/jobs/{} to view progress'.format(nomad_host,response['DispatchedJobID'].replace("/","%2F")))
         break
     except Exception as e:
