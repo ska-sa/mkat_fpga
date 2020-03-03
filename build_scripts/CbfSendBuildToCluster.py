@@ -22,10 +22,20 @@ parser.add_argument(
 parser.add_argument(
     '-r', '--RAM', dest='ram', action='store', required=True,type=int,
     help='Requred RAM(MB)')
+#parser.add_argument(
+#   '-u', '--UID', dest='uid', action='store', required=False,type=int,
+#    help='Telegram chat ID. Speak to Gareth to get this to work. Will Send')
 parser.add_argument(
-    '-u', '--UID', dest='uid', action='store', required=False,type=int,
-    help='Telegram chat ID. Speak to Gareth to get this to work. Will Send')
+    '-m', '--mlib_devel', dest='mlib_devel', action='store', required=False, default="default" ,
+    help='Path to mlib_devel directory to be copied to  server.')
 args = parser.parse_args()
+
+transferMlibDevel=False
+if(args.mlib_devel != "default"):
+    print("Will transfer custom mlib_devel to server")
+    transferMlibDevel=True
+else:
+    print("Will pull fresh mlib_devel from GitHub")
 
 #Parse Command Line arguments
 file_arg = args.file;
@@ -58,7 +68,6 @@ destination_folder_move = '/shared-brp/cbf_builds/{}/'.format(sub_directory)
 destination_folder_build = '/sunstore/cbf_builds/{}/'.format(sub_directory)
 
 #Rename Files that need to be renamed
-
 print('Replacing file paths.')
 replace_from = directory
 replace_to = destination_folder_build[:-1]
@@ -88,12 +97,15 @@ try:
 	print('mkdir {}'.format(destination_folder_move[:-1]))
 	ssh.exec_command('mkdir {}'.format(destination_folder_move[:-1]))
 
-	print('Transferring Files to shared storage server')
-	scp = SCPClient(ssh.get_transport())
-	print('{}/{}.slx'.format(directory,build_name))
+	print('Transferring Files to shared storage server:')
+	scp = SCPClient(ssh.get_transport(), socket_timeout=300)
+	print('\t{}/{}.slx'.format(directory,build_name))
 	scp.put('{}/{}.slx'.format(directory,build_name),remote_path=destination_folder_move,recursive=False)
-	print('{}/{}'.format(directory,build_name))
+	print('\t{}/{}'.format(directory,build_name))
 	scp.put('{}/{}'.format(directory,build_name),remote_path=destination_folder_move,recursive=True)
+	if(transferMlibDevel):
+		scp.put(args.mlib_devel,remote_path=destination_folder_move,recursive=True)
+        print('\t{}'.format(args.mlib_devel))
 except Exception as e:
 	print('Error copying data to sunstore: '+repr(e))
 	failed = True
@@ -118,6 +130,8 @@ if(failed):
 names = build_name
 paths = destination_folder_build[:-1]
 
+print(paths)
+
 nomad_job_name_to_display = "{}_{}_{}_build".format(timestamp,username,names)
 nomad_job_name="cbf_jobs"
 
@@ -137,9 +151,13 @@ job = {'Job': {'AllAtOnce': None,
   'ParameterizedJob': {
     'Payload': 'optional',
     'MetaRequired': [
-      'file_path'
-     ],
-     'MetaOptional': ['uid'],},
+      'file_path',
+    ],
+    'MetaOptional': [
+        'uid',
+        'mlib_devel_path'
+    ],    
+   },
   'ParentID': None,
   'Payload': None,
   'Periodic': None,
@@ -159,7 +177,7 @@ job = {'Job': {'AllAtOnce': None,
      'Interval': 300000000000,
      'Mode': 'delay'},
     'Tasks': [{'Artifacts': None,
-      'Config': {'image': 'harbor.sdp.kat.ac.za:443/cbf/vivado:2019p1','network_mode':'host','command':'/bin/bash','volumes':['/shared-brp:/sunstore'],'args': ["-c","/home/jasper/build_script.sh -p ${NOMAD_META_FILE_PATH}.slx -u ${NOMAD_META_UID}"]},
+      'Config': {'image': 'harbor.sdp.kat.ac.za:443/cbf/vivado:2019p1','network_mode':'host','command':'/bin/bash','volumes':['/shared-brp:/sunstore'],'args': ["-c","/home/jasper/build_script.sh -p ${NOMAD_META_FILE_PATH}.slx -u ${NOMAD_META_UID} -m ${NOMAD_META_MLIB_DEVEL_PATH}"]},
       'Constraints': None,
       'DispatchPayload': None,
       'Driver': 'docker',
@@ -192,13 +210,16 @@ print('Connecting to Nomad cluster')
 nomad_hosts = ['hashi1.sdp.kat.ac.za','hashi2.sdp.kat.ac.za','hashi3.sdp.kat.ac.za','hashi1.sdpdyn.kat.ac.za','hashi2.sdpdyn.kat.ac.za','hashi3.sdpdyn.kat.ac.za']
 
 for i in nomad_hosts:
-    nomad_host = i;
+    nomad_host = i
     try:
         my_nomad = nomad.Nomad(host=nomad_host)
         response = my_nomad.job.register_job(nomad_job_name, job)
-        response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046"})
+        if(transferMlibDevel):
+            response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046",'mlib_devel_path':"{}/mlib_devel".format(p)})
+        else:
+            response = my_nomad.job.dispatch_job(nomad_job_name, meta = {"file_path":"{}/{}".format(p,n),'uid':"756991046",'mlib_devel_path':"default".format(p)})
         print('Job submitted go to: http://{}:4646/ui/jobs/{} to view progress'.format(nomad_host,response['DispatchedJobID'].replace("/","%2F")))
-        break;
+        break
     except Exception as e:
         print('Error submitting job to',nomad_host, ':',repr(e))
 
