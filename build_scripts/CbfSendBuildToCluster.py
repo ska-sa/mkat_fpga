@@ -92,7 +92,7 @@ def createSSHClient(server, port, user, password):
 failed = False
 try:
 	print('Opening SSH Connection to shared storage server.')
-	ssh = createSSHClient('epyc01.sdp.kat.ac.za', 22, 'kat', storage_password)
+	ssh = createSSHClient('10.8.81.189', 22, 'kat', storage_password) #Should be epyc01.sdp.kat.ac.za but the vpn causes issues.
 	print('Creating Directories.')
 	print('mkdir {}'.format(destination_folder_move[:-1]))
 	ssh.exec_command('mkdir {}'.format(destination_folder_move[:-1]))
@@ -207,7 +207,7 @@ print(job['Job']['TaskGroups'][0]['Tasks'][0]['Config']['args'])
 
 print('Connecting to Nomad cluster')
 
-nomad_hosts = ['hashi1.sdp.kat.ac.za','hashi2.sdp.kat.ac.za','hashi3.sdp.kat.ac.za','hashi1.sdpdyn.kat.ac.za','hashi2.sdpdyn.kat.ac.za','hashi3.sdpdyn.kat.ac.za']
+nomad_hosts = ['hashi1.sdp.kat.ac.za','hashi2.sdp.kat.ac.za','hashi3.sdp.kat.ac.za','hashi1.sdpdyn.kat.ac.za','hashi2.sdpdyn.kat.ac.za','hashi3.sdpdyn.kat.ac.za','10.8.74.31']
 
 for i in nomad_hosts:
     nomad_host = i
