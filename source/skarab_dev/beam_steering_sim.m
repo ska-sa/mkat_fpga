@@ -14,17 +14,26 @@ signal_fft = fft(signal, fft_chans);
 indices = [-0.5:1/fft_chans:0.5-1/fft_chans];
 lookup_table = exp(j*2*pi*([-(lookup_table_size/2):lookup_table_size/2-1]/lookup_table_size));
 
-phase = ((-1*delay)*indices) + fringe_offset;
+phase = ((-delay)*indices) + fringe_offset;
 table_indices = mod(round(phase*lookup_table_size/2)+lookup_table_size/2, lookup_table_size);
 phase_slope = lookup_table(table_indices+1);
 %apply delay slope
 signal_fft_delayed = signal_fft .* phase_slope;
 
 %proposed solution
-initial_phase = delay/2+fringe_offset;
-rotator_init = exp(j*pi*initial_phase);
-phase_increment = delay/fft_chans;
-rotator_inc = exp(-j*pi*phase_increment);
+%delay = -delay;
+%fringe_offset = -fringe_offset;
+
+%negative delay slope for positive delay
+delay_radians = -delay * pi;
+fringe_offset_radians = fringe_offset * pi;
+
+initial_phase = -delay_radians/2+fringe_offset_radians;
+rotator_init = exp(j*initial_phase);
+
+phase_increment = delay_radians/fft_chans;
+rotator_inc = exp(j*phase_increment);
+
 rotators = zeros(1, fft_chans);
 rotator = rotator_init;
 for n = 1:fft_chans,
