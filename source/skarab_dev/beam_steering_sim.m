@@ -3,7 +3,7 @@
 % for each frequency after that
 
 fft_chans = 2^15; 
-fringe_offset = 0.25; %samples
+fringe_offset = 0.125; %samples
 delay = 0.5; %samples
 lookup_table_size = 1024; 
 
@@ -14,19 +14,26 @@ signal_fft = fft(signal, fft_chans);
 indices = [-0.5:1/fft_chans:0.5-1/fft_chans];
 lookup_table = exp(j*2*pi*([-(lookup_table_size/2):lookup_table_size/2-1]/lookup_table_size));
 
-phase = ((-1*delay)*indices) + fringe_offset;
+phase = ((-delay)*indices) + fringe_offset;
 table_indices = mod(round(phase*lookup_table_size/2)+lookup_table_size/2, lookup_table_size);
 phase_slope = lookup_table(table_indices+1);
 %apply delay slope
 signal_fft_delayed = signal_fft .* phase_slope;
-plot((180/pi)*angle(signal_fft_delayed.*conj(signal_fft)),'-');
-hold on;
 
 %proposed solution
-initial_phase = delay/2+fringe_offset;
-rotator_init = exp(j*pi*initial_phase);
-phase_increment = delay/fft_chans;
-rotator_inc = exp(-j*pi*phase_increment);
+%delay = -delay;
+%fringe_offset = -fringe_offset;
+
+%negative delay slope for positive delay
+delay_radians = -delay * pi;
+fringe_offset_radians = fringe_offset * pi;
+
+initial_phase = -delay_radians/2+fringe_offset_radians;
+rotator_init = exp(j*initial_phase);
+
+phase_increment = delay_radians/fft_chans;
+rotator_inc = exp(j*phase_increment);
+
 rotators = zeros(1, fft_chans);
 rotator = rotator_init;
 for n = 1:fft_chans,
@@ -35,10 +42,6 @@ for n = 1:fft_chans,
 end
 %apply delay slope
 signal_fft_delayed_new = signal_fft.*rotators;    
-plot((180/pi)*angle(signal_fft_delayed_new.*conj(signal_fft)),':');
-legend({'current','proposed'});
-xlabel('channel');
-ylabel('phase (degrees)');
 
 % Phase error sources;
 % * initial phase error on input data
@@ -47,7 +50,6 @@ ylabel('phase (degrees)');
 % * rotator value error accumulated 
 % * final phase error on output data
 % Assuming rounding, maximum error is half an LSB
-% Maximum phase error occurs when all error is in real or imaginary component or complex value
 
 xengs = 16; %maximum error occurs with maximum channels per xengine
 
@@ -84,6 +86,13 @@ max_phase_acc_error_phase_acc = chans_per_xeng * max_phase_acc_error_phase;
 %maximum theoretical phase error
 max_phase_error_worst = max_input_error_phase + max_phase_acc_init_error_phase + max_phase_acc_error_phase_acc + max_phase_acc_error_phase_inc + max_output_error_phase;
 
-title('Comparison of current and proposed delay correction techniques')
+heading = sprintf('Current vs proposed delay correction techniques\n(delay: %2.1f samples, fringe offset: %1.3f samples)', delay, fringe_offset);
+plot((180/pi)*angle(signal_fft_delayed.*conj(signal_fft)),'-');
+hold on;
+plot((180/pi)*angle(signal_fft_delayed_new.*conj(signal_fft)),':');
+legend({'current','proposed'});
+xlabel('channel');
+ylabel('phase (degrees)');
+title(heading); 
 text(50,20,sprintf('Worst case theoretical error = %2.1f degrees,\n with %d channels and %d xengines', max_phase_error_worst, fft_chans, xengs));
 
