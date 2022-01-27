@@ -55,25 +55,25 @@ xengs = 16; %maximum error occurs with maximum channels per xengine
 
 %input data from feng
 input_bits = 8;
-max_input_error_bits = 1/((2^input_bits)+1);
+max_input_error_bits = 1/(2^input_bits);
 max_input_error_phase = abs(360/(2*pi)*angle(exp(-j*max_input_error_bits)));
 
 %phase accumulator
 phase_acc_init_bits = 16; %input resolution
-max_phase_acc_init_error_bits = 1/((2^phase_acc_init_bits)+1);
+max_phase_acc_init_error_bits = 1/(2^phase_acc_init_bits);
 max_phase_acc_init_error_phase = abs(360/(2*pi)*angle(exp(-j*max_phase_acc_init_error_bits)));
-phase_acc_bits = 18; %phase accumulator resolution
-max_phase_acc_error_bits = 1/((2^phase_acc_bits)+1);
+phase_acc_bits = 25; %phase accumulator resolution
+max_phase_acc_error_bits = 1/(2^phase_acc_bits);
 max_phase_acc_error_phase = abs(360/(2*pi)*angle(exp(-j*max_phase_acc_error_bits)));
 
 %phase increment
 phase_inc_bits = 16; %input resolution
-max_phase_inc_error_bits = 1/((2^phase_inc_bits)+1);
+max_phase_inc_error_bits = 1/(2^phase_inc_bits);
 max_phase_inc_error_phase = abs(360/(2*pi)*angle(exp(-j*max_phase_inc_error_bits)));
 
 %output data
-output_bits = 8;
-max_output_error_bits = 1/((2^output_bits)+1);
+output_bits = 12;
+max_output_error_bits = 1/(2^output_bits);
 max_output_error_phase = abs(360/(2*pi)*angle(exp(-j*max_output_error_bits)));
 
 chans_per_xeng = fft_chans/xengs;
